@@ -1,0 +1,283 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  HOMEOWNER
+  PROPERTY_MANAGER
+  HOME_WATCHER
+}
+
+// ─── Core Models ──────────────────────────────────────────────────────────────
+
+model User {
+  id                String                  @id @default(cuid())
+  name              String
+  email             String                  @unique
+  passwordHash      String?
+  role              UserRole
+  createdAt         DateTime                @default(now())
+  properties        Property[]
+  managedProperties PropertyManagerAccess[]
+  watcherAssignments WatcherAssignment[]    @relation("WatcherAssignments")
+  watchReports      WatchReport[]           @relation("WatchReports")
+  stormAlerts       StormAlert[]            @relation("StormAlerts")
+}
+
+model Property {
+  id                   String                  @id @default(cuid())
+  homeowner            User                    @relation(fields: [homeownerId], references: [id])
+  homeownerId          String
+  name                 String
+  address              String
+  description          String?
+  rules                String?
+  wifiInfo             String?
+  parkingInfo          String?
+  latitude             Float?
+  longitude            Float?
+  // ─── Listing browser fields (Side A) ──────────────────────────────────────
+  town                 String?
+  bedrooms             Int?
+  bathrooms            Int?
+  petFriendly          Boolean                 @default(false)
+  beachSide            String?
+  amenities            String[]
+  isPublished          Boolean                 @default(false)
+  nightlyRate          Float?
+  coverPhotoUrl        String?
+  ownerPhone           String?
+  ownerEmail           String?
+  // ──────────────────────────────────────────────────────────────────────────
+  rooms                Room[]
+  appliances           Appliance[]
+  bookings             Booking[]
+  guideItems           LocalGuideItem[]
+  maintenanceTasks     MaintenanceTask[]
+  managerAccess        PropertyManagerAccess[]
+  watcherAssignments   WatcherAssignment[]
+  watchReports         WatchReport[]
+  stormAlerts          StormAlert[]
+  contractorDispatches ContractorDispatch[]
+  complianceDocuments  ComplianceDocument[]
+  complianceState      ComplianceState?
+  photos               PropertyPhoto[]
+  ownersPicks          OwnersPick[]
+}
+
+model PropertyManagerAccess {
+  id          String   @id @default(cuid())
+  manager     User     @relation(fields: [managerId], references: [id])
+  managerId   String
+  property    Property @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  permissions String[]
+
+  @@unique([managerId, propertyId])
+}
+
+// ─── Booking / Renter ─────────────────────────────────────────────────────────
+
+model Booking {
+  id           String        @id @default(cuid())
+  property     Property      @relation(fields: [propertyId], references: [id])
+  propertyId   String
+  startDate    DateTime
+  endDate      DateTime
+  qrCodeToken  String        @unique
+  shareLink    String        @unique
+  tripPlanners TripPlanner[]
+  groupEvents  GroupEvent[]
+}
+
+model TripPlanner {
+  id        String  @id @default(cuid())
+  booking   Booking @relation(fields: [bookingId], references: [id])
+  bookingId String
+  name      String
+  pinHash   String
+}
+
+model GroupEvent {
+  id                 String   @id @default(cuid())
+  booking            Booking  @relation(fields: [bookingId], references: [id])
+  bookingId          String
+  createdByPlannerId String?
+  title              String
+  datetime           DateTime
+  category           String
+  notes              String?
+  link               String?
+}
+
+// ─── Property Sub-resources ───────────────────────────────────────────────────
+
+model Room {
+  id          String   @id @default(cuid())
+  property    Property @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  name        String
+  type        String
+  description String?
+}
+
+model Appliance {
+  id               String    @id @default(cuid())
+  property         Property  @relation(fields: [propertyId], references: [id])
+  propertyId       String
+  name             String
+  make             String?
+  model            String?
+  purchaseDate     DateTime?
+  maintenanceNotes String?
+}
+
+model MaintenanceTask {
+  id          String    @id @default(cuid())
+  property    Property  @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  title       String
+  dueDate     DateTime
+  recurrence  String?
+  completedAt DateTime?
+}
+
+model LocalGuideItem {
+  id          String   @id @default(cuid())
+  property    Property @relation(fields: [propertyId], references: [id])
+  propertyId  String
+  category    String
+  name        String
+  description String?
+  websiteUrl  String?
+}
+
+// ─── Home Watch ───────────────────────────────────────────────────────────────
+
+model WatcherAssignment {
+  id             String   @id @default(cuid())
+  watcher        User     @relation("WatcherAssignments", fields: [watcherId], references: [id])
+  watcherId      String
+  property       Property @relation(fields: [propertyId], references: [id])
+  propertyId     String
+  handsOffMode   Boolean  @default(false)
+  inviteToken    String   @unique
+  inviteAccepted Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@unique([watcherId, propertyId])
+}
+
+model WatchReport {
+  id               String   @id @default(cuid())
+  property         Property @relation(fields: [propertyId], references: [id])
+  propertyId       String
+  watcher          User     @relation("WatchReports", fields: [watcherId], references: [id])
+  watcherId        String
+  visitedAt        DateTime @default(now())
+  summary          String
+  overallCondition String
+  photoUrls        String[]
+  notes            String?
+  createdAt        DateTime @default(now())
+}
+
+model StormAlert {
+  id                   String               @id @default(cuid())
+  property             Property             @relation(fields: [propertyId], references: [id])
+  propertyId           String
+  reportedBy           User                 @relation("StormAlerts", fields: [reportedById], references: [id])
+  reportedById         String
+  alertType            String
+  severity             String
+  description          String
+  photoUrls            String[]
+  damageCostEstimate   Float?
+  requiresOwnerApproval Boolean             @default(true)
+  ownerApprovedAt      DateTime?
+  resolvedAt           DateTime?
+  createdAt            DateTime             @default(now())
+  dispatches           ContractorDispatch[]
+}
+
+model ContractorDispatch {
+  id              String     @id @default(cuid())
+  stormAlert      StormAlert @relation(fields: [stormAlertId], references: [id])
+  stormAlertId    String
+  property        Property   @relation(fields: [propertyId], references: [id])
+  propertyId      String
+  contractorName  String
+  contractorPhone String?
+  contractorEmail String?
+  trade           String
+  workDescription String
+  estimatedCost   Float?
+  status          String     @default("pending")
+  approvedAt      DateTime?
+  approvedById    String?
+  scheduledDate   DateTime?
+  completedAt     DateTime?
+  invoiceUrl      String?
+  notes           String?
+  createdAt       DateTime   @default(now())
+}
+
+// ─── Listing Photos & Owner's Picks ──────────────────────────────────────────
+
+model PropertyPhoto {
+  id         String   @id @default(cuid())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+  url        String
+  caption    String?
+  sortOrder  Int      @default(0)
+  isCover    Boolean  @default(false)
+}
+
+model OwnersPick {
+  id         String   @id @default(cuid())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+  name       String
+  category   String
+  ownerNote  String?
+  link       String?
+  photoUrl   String?
+  sortOrder  Int      @default(0)
+}
+
+// ─── Compliance ───────────────────────────────────────────────────────────────
+
+model ComplianceDocument {
+  id         String    @id @default(cuid())
+  property   Property  @relation(fields: [propertyId], references: [id])
+  propertyId String
+  name       String
+  docType    String
+  issueDate  DateTime?
+  expiryDate DateTime?
+  notes      String?
+  fileUrl    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model ComplianceState {
+  id             String   @id @default(cuid())
+  property       Property @relation(fields: [propertyId], references: [id])
+  propertyId     String   @unique
+  selectedMuniId String   @default("")
+  checkedItems   Json     @default("{}")
+  paidQuarters   Json     @default("{}")
+  nightlyRate    Float    @default(350)
+  updatedAt      DateTime @updatedAt
+}

@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(165deg, #e4f1fb 0%, #d0e8f7 20%, #eaf3f8 50%, #f0ebe0 75%, #fef3e2 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ─── Glass card utility ─────────────────────────────────── */
+@layer components {
+  .glass-card {
+    @apply rounded-3xl border border-white/60 shadow-glass;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .glass-card-sm {
+    @apply rounded-2xl border border-white/60 shadow-glass;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+  }
+
+  .glass-nav {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+  }
+
+  .section-label {
+    @apply text-xs font-semibold uppercase tracking-widest text-ocean-300/70 mb-3;
+  }
+
+  /* Pill buttons */
+  .pill-btn {
+    @apply rounded-full px-4 py-2 text-sm font-semibold transition-all;
+  }
+
+  .pill-btn-primary {
+    @apply pill-btn bg-ocean text-white hover:bg-ocean-700 active:scale-95;
+  }
+
+  .pill-btn-ghost {
+    @apply pill-btn border border-ocean/25 text-ocean hover:bg-ocean/5 active:scale-95;
+  }
+}
+
+/* ─── Input focus ring ───────────────────────────────────── */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(15, 76, 117, 0.15);
+}
+
+/* ─── Scrollbar (webkit) ──────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(15, 76, 117, 0.20); border-radius: 2px; }
+
+/* ─── Safe area padding helpers ─────────────────────────── */
+.pt-safe { padding-top: var(--safe-top); }
+.pb-safe { padding-bottom: var(--safe-bottom); }

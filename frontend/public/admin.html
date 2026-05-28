@@ -1,0 +1,2513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shore Stay — Visual Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+/* ─── THEME ─── */
+:root {
+  --ocean: #0f4c75;
+  --ocean-mid: #1565a0;
+  --ocean-light: #1a7abf;
+  --seafoam: #56cfe1;
+  --seafoam-light: #a8eaf4;
+  --sand: #f5e0c3;
+  --sand-dark: #e8c99a;
+
+  /* Admin chrome */
+  --chrome-bg: #0b0f1a;
+  --chrome-surface: #111827;
+  --chrome-surface2: #1a2236;
+  --chrome-border: #1f2d44;
+  --chrome-border2: #243350;
+  --chrome-text: #e2e8f4;
+  --chrome-muted: #7a92b4;
+  --chrome-accent: var(--seafoam);
+
+  --sidebar-w: 310px;
+  --toolbar-h: 54px;
+}
+
+body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; background: var(--chrome-bg); color: var(--chrome-text); }
+
+/* ══════════════════════════════════
+   ADMIN CHROME — TOOLBAR
+══════════════════════════════════ */
+#toolbar {
+  height: var(--toolbar-h);
+  background: linear-gradient(90deg, #0c1628 0%, #111827 100%);
+  border-bottom: 1px solid var(--chrome-border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.4);
+}
+/* seafoam accent line */
+#toolbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--seafoam) 30%, var(--seafoam) 70%, transparent);
+  opacity: 0.4;
+}
+
+.tb-brand {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Pacifico', cursive;
+  font-size: 16px;
+  color: var(--seafoam);
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+  text-shadow: 0 0 20px rgba(86,207,225,0.4);
+}
+.tb-brand-icon { font-size: 18px; }
+
+.tb-divider { width: 1px; height: 24px; background: var(--chrome-border2); flex-shrink: 0; margin: 0 2px; }
+
+#pageSelect {
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  border-radius: 8px;
+  color: var(--chrome-text);
+  font-size: 12px; font-weight: 500;
+  padding: 6px 10px;
+  cursor: pointer; outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+#pageSelect:focus, #pageSelect:hover { border-color: var(--seafoam); }
+
+#renterTabBar { display: none; gap: 4px; }
+#renterTabBar.visible { display: flex; }
+.rtab {
+  font-size: 11px; font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 20px;
+  background: transparent;
+  border: 1px solid var(--chrome-border2);
+  color: var(--chrome-muted);
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: inherit;
+}
+.rtab:hover { color: var(--chrome-text); border-color: var(--chrome-muted); }
+.rtab.active { background: var(--ocean); border-color: var(--ocean-light); color: white; box-shadow: 0 0 12px rgba(15,76,117,0.5); }
+
+.tb-btn {
+  font-size: 11px; font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  color: var(--chrome-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+  font-family: inherit;
+  letter-spacing: 0.2px;
+}
+.tb-btn:hover { color: var(--chrome-text); border-color: var(--chrome-muted); }
+.tb-btn.active { background: rgba(86,207,225,0.12); border-color: var(--seafoam); color: var(--seafoam); }
+.tb-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.tb-spacer { flex: 1; }
+
+#apiKeyWrap { display: flex; align-items: center; gap: 7px; }
+#apiKeyWrap label { font-size: 10px; font-weight: 600; color: var(--chrome-muted); white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase; }
+#apiKeyInput {
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  border-radius: 8px;
+  color: var(--chrome-text);
+  font-size: 11px;
+  padding: 6px 10px;
+  width: 200px; outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+#apiKeyInput:focus { border-color: var(--seafoam); }
+#apiKeyInput.has-key { border-color: #22c55e; background: rgba(34,197,94,0.05); }
+
+/* ══════════════════════════════════
+   LAYOUT
+══════════════════════════════════ */
+#layout {
+  display: flex;
+  height: calc(100vh - var(--toolbar-h));
+  margin-top: var(--toolbar-h);
+}
+
+/* ══════════════════════════════════
+   PREVIEW PANE
+══════════════════════════════════ */
+#previewPane {
+  flex: 1;
+  overflow-y: auto;
+  background: #f0e6d8;
+  position: relative;
+}
+#previewPane::-webkit-scrollbar { width: 7px; }
+#previewPane::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+#previewPane::-webkit-scrollbar-thumb { background: rgba(15,76,117,0.2); border-radius: 4px; }
+
+/* ── Editable UX ── */
+[data-editable] { position: relative; cursor: default; transition: outline 0.12s, box-shadow 0.12s; }
+body.edit-mode [data-editable] { cursor: pointer; }
+body.edit-mode [data-editable]:hover {
+  outline: 2px dashed rgba(86,207,225,0.8);
+  outline-offset: 3px;
+}
+body.edit-mode [data-editable].sel {
+  outline: 2.5px solid var(--seafoam) !important;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(86,207,225,0.15);
+}
+.etag {
+  display: none;
+  position: absolute;
+  top: -26px; left: 0;
+  background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-mid) 100%);
+  color: white;
+  font-size: 10px; font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 5px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 500;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.2px;
+  box-shadow: 0 3px 10px rgba(15,76,117,0.4);
+}
+body.edit-mode [data-editable]:hover .etag { display: block; }
+
+/* ══════════════════════════════════
+   SIDEBAR
+══════════════════════════════════ */
+#sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--chrome-surface);
+  border-left: 1px solid var(--chrome-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.3);
+}
+
+.sb-sec { padding: 14px 16px; border-bottom: 1px solid var(--chrome-border); }
+.sb-lbl {
+  font-size: 9.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--chrome-muted);
+  margin-bottom: 10px;
+}
+
+#noSel {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 28px;
+  text-align: center;
+}
+.nosel-icon {
+  width: 56px; height: 56px;
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+#noSel p { font-size: 12px; color: var(--chrome-muted); line-height: 1.7; }
+#noSel strong { color: var(--seafoam); }
+#noSel .sub { font-size: 10.5px; color: var(--chrome-muted); opacity: 0.7; margin-top: 4px; }
+
+#hasSel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+#hasSel.on { display: flex; }
+
+/* Element info */
+#elLabel { font-size: 13px; font-weight: 700; color: var(--chrome-text); }
+#elMeta { font-size: 11px; color: var(--chrome-muted); margin-top: 3px; }
+#elPreview {
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--chrome-muted);
+  margin-top: 9px;
+  max-height: 50px;
+  overflow: hidden;
+  line-height: 1.45;
+  font-style: italic;
+}
+
+/* Direct edit */
+#directEditWrap { padding: 14px 16px; border-bottom: 1px solid var(--chrome-border); }
+#directEditArea {
+  width: 100%;
+  background: var(--chrome-surface2);
+  border: 1.5px solid var(--seafoam);
+  border-radius: 9px;
+  color: var(--chrome-text);
+  font-size: 12px;
+  padding: 9px 11px;
+  resize: vertical;
+  min-height: 76px;
+  outline: none;
+  font-family: inherit;
+  line-height: 1.55;
+  transition: box-shadow 0.2s;
+}
+#directEditArea:focus { box-shadow: 0 0 0 3px rgba(86,207,225,0.18); }
+#directApplyRow { display: flex; gap: 7px; margin-top: 9px; }
+#directApplyBtn {
+  flex: 1;
+  background: linear-gradient(135deg, var(--seafoam) 0%, #3db8cf 100%);
+  border: none; border-radius: 8px;
+  color: var(--ocean);
+  font-size: 12px; font-weight: 800;
+  padding: 9px 14px;
+  cursor: pointer; font-family: inherit;
+  transition: opacity 0.15s, transform 0.12s;
+  letter-spacing: 0.2px;
+}
+#directApplyBtn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+#directApplyBtn:active:not(:disabled) { transform: translateY(0); }
+#directApplyBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+#directClearBtn {
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  border-radius: 8px;
+  color: var(--chrome-muted);
+  font-size: 12px;
+  padding: 9px 11px;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+#directClearBtn:hover { color: var(--chrome-text); border-color: var(--chrome-muted); }
+.direct-hint { font-size: 10px; color: var(--chrome-muted); margin-top: 7px; opacity: 0.8; }
+
+/* Quick actions */
+.qbtn {
+  width: 100%; text-align: left;
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  border-radius: 8px;
+  color: var(--chrome-text);
+  font-size: 11px; font-weight: 500;
+  padding: 8px 11px;
+  cursor: pointer;
+  margin-bottom: 5px;
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 8px;
+  font-family: inherit;
+}
+.qbtn:hover:not(:disabled) { background: #1f3050; border-color: var(--chrome-muted); color: white; }
+.qbtn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* AI toggle */
+#aiToggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--chrome-border);
+  user-select: none;
+  transition: background 0.15s;
+}
+#aiToggle:hover { background: var(--chrome-surface2); }
+#aiToggleLabel { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--chrome-muted); }
+#aiToggleChev { font-size: 10px; color: var(--chrome-muted); transition: transform 0.22s; }
+#aiToggleChev.open { transform: rotate(180deg); }
+#aiBody { display: none; flex: 1; flex-direction: column; overflow: hidden; min-height: 0; }
+#aiBody.open { display: flex; }
+
+/* Chat */
+#chatMsgs {
+  flex: 1; overflow-y: auto;
+  padding: 12px;
+  display: flex; flex-direction: column; gap: 8px;
+  min-height: 0;
+}
+#chatMsgs::-webkit-scrollbar { width: 4px; }
+#chatMsgs::-webkit-scrollbar-thumb { background: var(--chrome-border2); border-radius: 2px; }
+
+.msg { font-size: 11px; line-height: 1.55; max-width: 95%; }
+.msg-user {
+  background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-mid) 100%);
+  color: white;
+  padding: 8px 11px;
+  border-radius: 11px 11px 2px 11px;
+  align-self: flex-end;
+  box-shadow: 0 2px 8px rgba(15,76,117,0.3);
+}
+.msg-ai {
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  color: var(--chrome-text);
+  padding: 8px 11px;
+  border-radius: 2px 11px 11px 11px;
+  align-self: flex-start;
+}
+.msg-sys {
+  font-size: 10px; font-style: italic;
+  color: var(--chrome-muted); align-self: center; text-align: center;
+}
+.msg-err {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #f87171;
+  padding: 8px 11px; border-radius: 8px;
+  align-self: flex-start;
+}
+
+#chatBar {
+  border-top: 1px solid var(--chrome-border);
+  padding: 11px;
+  display: flex; gap: 7px; align-items: flex-end;
+}
+#chatIn {
+  flex: 1;
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  border-radius: 9px;
+  color: var(--chrome-text);
+  font-size: 12px;
+  padding: 9px 11px;
+  resize: none; height: 60px;
+  outline: none; font-family: inherit; line-height: 1.4;
+  transition: border-color 0.2s;
+}
+#chatIn:focus { border-color: var(--seafoam); }
+#sendBtn {
+  background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-mid) 100%);
+  border: none; border-radius: 9px; color: white;
+  font-size: 15px; padding: 0; cursor: pointer;
+  height: 60px; width: 46px;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(15,76,117,0.3);
+}
+#sendBtn:hover { opacity: 0.88; }
+#sendBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.spin {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white; border-radius: 50%;
+  animation: sp 0.7s linear infinite;
+}
+@keyframes sp { to { transform: rotate(360deg); } }
+
+/* ══════════════════════════════════════════════
+   SHORE STAY PREVIEW — SHARED
+══════════════════════════════════════════════ */
+.ss-page { display: none; }
+.ss-page.on { display: block; }
+
+/* Wave divider */
+.wave-divider { display: block; line-height: 0; margin-bottom: -2px; }
+.wave-divider svg { display: block; width: 100%; }
+
+/* Ocean gradient header base */
+.ss-ocean-hdr {
+  background: linear-gradient(160deg, #0a3356 0%, #0f4c75 50%, #1565a0 100%);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+/* subtle wave texture on headers */
+.ss-ocean-hdr::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='20' viewBox='0 0 60 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q15 0 30 10 Q45 20 60 10' stroke='rgba(255,255,255,0.04)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") repeat;
+  background-size: 60px 20px;
+  pointer-events: none;
+}
+
+.ss-brand-pill {
+  display: inline-block;
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.07);
+  padding: 3px 10px; border-radius: 20px;
+  margin-bottom: 6px;
+}
+
+/* ══════════════════════════════════════════════
+   HOME PAGE
+══════════════════════════════════════════════ */
+.home-nav {
+  background: linear-gradient(90deg, #071e36 0%, #0f3358 100%);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 15px 28px;
+  color: white;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.home-logo {
+  font-family: 'Pacifico', cursive;
+  font-size: 22px; color: white;
+  text-shadow: 0 2px 12px rgba(86,207,225,0.5);
+  letter-spacing: 0.5px;
+}
+.home-nav-links { display: flex; gap: 10px; align-items: center; }
+
+.btn-ghost-wh {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 999px; padding: 7px 16px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.18s; backdrop-filter: blur(4px);
+}
+.btn-ghost-wh:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); }
+
+/* Hero */
+.hero-wrap {
+  background: linear-gradient(180deg, #e8f4fd 0%, #f0e8d8 60%, #f5e0c3 100%);
+  padding: 36px 28px 28px;
+}
+.hero-card {
+  background: white;
+  border-radius: 24px;
+  max-width: 680px; margin: 0 auto 28px;
+  padding: 44px 40px;
+  box-shadow: 0 8px 40px rgba(15,76,117,0.12), 0 2px 8px rgba(15,76,117,0.05);
+  position: relative; overflow: hidden;
+}
+/* decorative seafoam accent on hero card */
+.hero-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--ocean), var(--seafoam), var(--ocean));
+}
+.hero-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--seafoam);
+  margin-bottom: 10px;
+}
+.hero-h1 {
+  font-family: 'Pacifico', cursive;
+  font-size: 46px; color: var(--ocean);
+  line-height: 1.15; letter-spacing: 0.5px;
+  text-shadow: 0 2px 8px rgba(15,76,117,0.1);
+}
+.hero-sub { font-size: 16px; color: #4a6380; margin-top: 14px; line-height: 1.7; font-weight: 400; }
+.hero-actions { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+.btn-primary {
+  background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-mid) 100%);
+  color: white; border: none; border-radius: 999px;
+  padding: 12px 24px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 16px rgba(15,76,117,0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(15,76,117,0.4); }
+.btn-outline {
+  background: transparent; color: var(--ocean);
+  border: 2px solid var(--ocean); border-radius: 999px;
+  padding: 11px 24px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: all 0.18s;
+}
+.btn-outline:hover { background: var(--ocean); color: white; }
+
+/* Features */
+.feat-wrap { max-width: 680px; margin: 0 auto 28px; }
+.feat-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ocean); opacity: 0.6;
+  text-align: center; margin-bottom: 6px;
+}
+.feat-h {
+  font-size: 26px; font-weight: 800; color: var(--ocean);
+  text-align: center; margin-bottom: 20px; letter-spacing: -0.3px;
+}
+.feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.feat-card {
+  background: white;
+  border-radius: 18px;
+  padding: 22px 18px;
+  box-shadow: 0 3px 16px rgba(15,76,117,0.08);
+  transition: transform 0.18s, box-shadow 0.18s;
+  border: 1px solid rgba(15,76,117,0.06);
+}
+.feat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(15,76,117,0.13); }
+.fi-wrap {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, #e8f4fd 0%, #d0eaf8 100%);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; margin-bottom: 12px;
+}
+.ft { font-size: 14px; font-weight: 800; color: var(--ocean); margin-bottom: 5px; }
+.fd { font-size: 12px; color: #5a7090; line-height: 1.6; }
+/* hidden class for fi backwards compat */
+.fi { font-size: 28px; display: block; margin-bottom: 10px; }
+
+/* Home footer */
+.home-footer {
+  max-width: 680px; margin: 0 auto;
+  background: linear-gradient(135deg, var(--ocean) 0%, #0a3356 100%);
+  color: rgba(255,255,255,0.6);
+  text-align: center; padding: 20px 24px;
+  font-size: 12px; border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(15,76,117,0.2);
+}
+
+/* ══════════════════════════════════════════════
+   RENTER HUB
+══════════════════════════════════════════════ */
+.rh-header {
+  background: linear-gradient(160deg, #0a3356 0%, #0f4c75 55%, #1060a0 100%);
+  padding: 22px 20px 0; color: white; position: relative; overflow: hidden;
+}
+.rh-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='80' height='24' viewBox='0 0 80 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 12 Q20 2 40 12 Q60 22 80 12' stroke='rgba(86,207,225,0.12)' stroke-width='2' fill='none'/%3E%3C/svg%3E") repeat;
+  background-size: 80px 24px;
+  pointer-events: none;
+}
+.rh-inner { position: relative; }
+.rh-prop-name {
+  font-size: 24px; font-weight: 800; margin-top: 6px;
+  letter-spacing: -0.3px; line-height: 1.2;
+}
+.rh-addr { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 3px; }
+.rh-dates {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; color: var(--seafoam);
+  background: rgba(86,207,225,0.12);
+  border: 1px solid rgba(86,207,225,0.25);
+  padding: 4px 12px; border-radius: 999px; margin-top: 8px;
+}
+.rh-planner-btn {
+  display: inline-block; margin-top: 10px; margin-bottom: 18px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 999px; padding: 5px 14px;
+  font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  backdrop-filter: blur(4px);
+  transition: all 0.18s;
+}
+.rh-planner-btn:hover { background: rgba(255,255,255,0.18); }
+
+/* Tab nav */
+.rh-tabs {
+  display: flex; background: white;
+  border-bottom: 1px solid #e8edf5;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  position: sticky; top: 0; z-index: 10;
+}
+.rh-tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 11px 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.03em;
+  color: #94a3b8; border: none; background: none;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  font-family: inherit; gap: 3px;
+  transition: all 0.18s;
+}
+.rh-tab .te { font-size: 18px; }
+.rh-tab.on { color: var(--ocean); border-bottom-color: var(--seafoam); background: rgba(86,207,225,0.04); }
+
+.rh-body { padding: 20px 16px; background: #f2e8d8; min-height: 300px; }
+.rh-pane { display: none; }
+.rh-pane.on { display: block; }
+
+/* Rules */
+.rules-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.rule-item {
+  background: white; border-radius: 14px;
+  padding: 14px 16px;
+  display: flex; align-items: flex-start; gap: 13px;
+  box-shadow: 0 2px 8px rgba(15,76,117,0.06);
+  border-left: 3px solid var(--seafoam);
+}
+.rule-ico {
+  font-size: 20px; flex-shrink: 0;
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, #e8f4fd 0%, #d0eaf8 100%);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+}
+.rule-txt { font-size: 13px; color: #334155; line-height: 1.6; padding-top: 9px; }
+
+/* Info */
+.info-grid { display: flex; flex-direction: column; gap: 10px; }
+.info-card {
+  background: white; border-radius: 16px;
+  padding: 15px 16px;
+  box-shadow: 0 2px 8px rgba(15,76,117,0.06);
+  border: 1px solid rgba(15,76,117,0.05);
+}
+.info-ch { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.info-ico-wrap {
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  background: linear-gradient(135deg, #e8f4fd, #d0eaf8);
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.info-ttl { font-size: 13px; font-weight: 800; color: var(--ocean); }
+.info-body { font-size: 13px; color: #4a6078; line-height: 1.65; padding-left: 44px; }
+
+/* Rooms */
+.rooms-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+.room-card {
+  background: white; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 2px 8px rgba(15,76,117,0.06);
+  border: 1px solid rgba(15,76,117,0.05);
+}
+.room-thumb {
+  height: 70px;
+  background: linear-gradient(135deg, #0f4c75 0%, #1565a0 50%, #56cfe1 100%);
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+}
+.room-body { padding: 12px 14px; }
+.room-name { font-size: 14px; font-weight: 800; color: var(--ocean); }
+.room-type-badge {
+  display: inline-block; margin-top: 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+  background: rgba(86,207,225,0.15); color: var(--ocean);
+  padding: 2px 8px; border-radius: 999px;
+}
+.room-desc { font-size: 12px; color: #5a7090; margin-top: 7px; line-height: 1.55; }
+
+/* Planner */
+.plan-day { margin-bottom: 22px; }
+.plan-date-hdr {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 800; color: var(--ocean);
+  margin-bottom: 12px;
+}
+.plan-date-hdr::after { content: ''; flex: 1; height: 1px; background: rgba(15,76,117,0.12); }
+.plan-evt {
+  background: white; border-radius: 13px;
+  padding: 12px 14px; margin-bottom: 8px;
+  display: flex; gap: 12px; align-items: flex-start;
+  box-shadow: 0 2px 8px rgba(15,76,117,0.06);
+  border: 1px solid rgba(15,76,117,0.05);
+}
+.plan-time {
+  font-size: 11px; font-weight: 800; color: var(--seafoam);
+  width: 52px; flex-shrink: 0; padding-top: 2px; line-height: 1.3;
+  text-align: center;
+}
+.plan-time-border { border-right: 2px solid rgba(86,207,225,0.25); padding-right: 12px; }
+.plan-name { font-size: 13px; font-weight: 700; color: #1e293b; }
+.plan-cat { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+/* Guide */
+.guide-cat { margin-bottom: 20px; }
+.guide-cat-h {
+  font-size: 15px; font-weight: 800; color: var(--ocean);
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.guide-items { display: flex; flex-direction: column; gap: 8px; }
+.guide-item {
+  background: white; border-radius: 13px;
+  padding: 12px 15px;
+  box-shadow: 0 2px 6px rgba(15,76,117,0.06);
+  display: flex; flex-direction: column; gap: 3px;
+  border: 1px solid rgba(15,76,117,0.05);
+}
+.guide-name { font-size: 13px; font-weight: 700; color: #1e293b; }
+.guide-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+/* ══════════════════════════════════════════════
+   HOMEOWNER DASHBOARD
+══════════════════════════════════════════════ */
+.dash-header {
+  background: linear-gradient(160deg, #071e36 0%, #0f4c75 55%, #1060a0 100%);
+  padding: 30px 26px 0; color: white; position: relative; overflow: hidden;
+}
+.dash-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='100' height='30' viewBox='0 0 100 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 15 Q25 2 50 15 Q75 28 100 15' stroke='rgba(255,255,255,0.04)' stroke-width='2' fill='none'/%3E%3C/svg%3E") repeat;
+  background-size: 100px 30px; pointer-events: none;
+}
+.dash-inner { position: relative; padding-bottom: 24px; }
+.dash-name { font-size: 24px; font-weight: 800; margin-top: 6px; letter-spacing: -0.3px; }
+.dash-sub { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+/* stat pills in header */
+.dash-stats { display: flex; gap: 10px; margin-top: 16px; }
+.dash-stat {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px; padding: 8px 14px;
+  backdrop-filter: blur(4px);
+}
+.dash-stat-n { font-size: 20px; font-weight: 800; line-height: 1; }
+.dash-stat-l { font-size: 10px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+
+.dash-body { background: #f2e8d8; padding: 22px; min-height: 300px; }
+.dash-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.dash-sec-ttl { font-size: 14px; font-weight: 800; color: #2d4156; }
+.dash-add-btn {
+  background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-mid) 100%);
+  color: white; border: none; border-radius: 999px;
+  padding: 8px 18px; font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 3px 12px rgba(15,76,117,0.3);
+  transition: transform 0.15s;
+}
+.dash-add-btn:hover { transform: translateY(-1px); }
+
+.prop-card {
+  background: white; border-radius: 20px;
+  padding: 0; overflow: hidden;
+  box-shadow: 0 3px 16px rgba(15,76,117,0.09);
+  margin-bottom: 12px;
+  border: 1px solid rgba(15,76,117,0.06);
+}
+.prop-card-top {
+  background: linear-gradient(90deg, var(--ocean) 0%, var(--ocean-mid) 100%);
+  padding: 14px 18px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.prop-name { font-size: 15px; font-weight: 800; color: white; }
+.prop-addr { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+.prop-card-body { padding: 14px 18px; }
+.prop-meta { display: flex; gap: 16px; }
+.prop-stat { display: flex; align-items: center; gap: 5px; }
+.prop-stat-ico { font-size: 14px; }
+.prop-stat-txt { font-size: 12px; color: #64748b; font-weight: 600; }
+
+/* Maintenance */
+.maint-card {
+  background: white; border-radius: 14px;
+  padding: 14px 16px; margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(15,76,117,0.06);
+  display: flex; align-items: center; justify-content: space-between;
+  border: 1px solid rgba(15,76,117,0.05);
+}
+.maint-left { display: flex; align-items: center; gap: 13px; }
+.maint-ico-wrap {
+  width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.maint-ico-wrap.warn { background: #fef9c3; }
+.maint-ico-wrap.ok   { background: #dcfce7; }
+.maint-ico-wrap.info { background: #dbeafe; }
+.maint-ttl { font-size: 13px; font-weight: 700; color: #1e293b; }
+.maint-due { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.maint-badge {
+  font-size: 10px; font-weight: 700; padding: 4px 11px;
+  border-radius: 999px; letter-spacing: 0.04em;
+}
+.badge-upcoming { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge-ok       { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.badge-info     { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+
+/* Empty state */
+.empty-state {
+  background: white; border-radius: 22px;
+  border: 2px dashed rgba(15,76,117,0.15);
+  padding: 44px 24px; text-align: center; margin-top: 14px;
+  box-shadow: 0 2px 8px rgba(15,76,117,0.04);
+}
+.empty-ico { font-size: 48px; filter: drop-shadow(0 3px 8px rgba(15,76,117,0.15)); }
+.empty-ttl { font-size: 18px; font-weight: 800; color: #2d4156; margin-top: 14px; }
+.empty-dsc { font-size: 13px; color: #64748b; margin-top: 8px; line-height: 1.7; max-width: 280px; margin-left: auto; margin-right: auto; }
+.empty-cta {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--ocean) 0%, var(--ocean-mid) 100%);
+  color: white; border-radius: 999px;
+  padding: 12px 26px; font-size: 14px; font-weight: 700;
+  margin-top: 20px; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(15,76,117,0.3);
+}
+
+/* ══════════════════════════════════
+   HELP MODAL
+══════════════════════════════════ */
+#helpModal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  z-index: 2000; align-items: center; justify-content: center;
+}
+#helpModal.on { display: flex; }
+#helpBox {
+  background: var(--chrome-surface);
+  border: 1px solid var(--chrome-border2);
+  border-radius: 18px; padding: 30px;
+  max-width: 440px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+#helpBox h2 { font-size: 17px; color: var(--seafoam); margin-bottom: 8px; }
+#helpBox p { font-size: 12px; color: var(--chrome-muted); line-height: 1.75; margin-bottom: 10px; }
+#helpBox ul { font-size: 12px; color: var(--chrome-muted); line-height: 1.95; padding-left: 18px; }
+#helpBox li strong { color: var(--chrome-text); }
+.help-close {
+  margin-top: 20px;
+  background: linear-gradient(135deg, var(--seafoam), #3db8cf);
+  border: none; border-radius: 9px;
+  color: var(--ocean); font-size: 13px; font-weight: 800;
+  padding: 10px 20px; cursor: pointer; font-family: inherit;
+}
+
+/* ══════════════════════════════════
+   COLOR & THEME PANEL
+══════════════════════════════════ */
+#themePanel { border-bottom: 1px solid var(--chrome-border); flex-shrink: 0; }
+#themeToggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 16px; cursor: pointer; user-select: none;
+  transition: background 0.15s;
+}
+#themeToggle:hover { background: var(--chrome-surface2); }
+#themeToggleLabel {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--seafoam);
+  display: flex; align-items: center; gap: 6px;
+}
+#themeChev { font-size: 10px; color: var(--chrome-muted); transition: transform 0.22s; }
+#themeChev.open { transform: rotate(180deg); }
+#themeBody { display: none; padding: 0 16px 14px; }
+#themeBody.open { display: block; }
+
+.clr-group { margin-bottom: 14px; }
+.clr-group-title {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--chrome-muted); margin-bottom: 8px;
+}
+.clr-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 7px;
+}
+.clr-row label { font-size: 11px; color: var(--chrome-text); font-weight: 500; }
+.clr-ctrl { display: flex; align-items: center; gap: 6px; }
+.clr-swatch {
+  width: 28px; height: 28px; border-radius: 7px;
+  border: 2px solid var(--chrome-border2);
+  cursor: pointer; padding: 0;
+  -webkit-appearance: none; appearance: none;
+  background: none; overflow: hidden;
+}
+.clr-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+.clr-swatch::-webkit-color-swatch { border: none; border-radius: 5px; }
+.clr-hex {
+  font-size: 10px; color: var(--chrome-muted); font-family: monospace;
+  background: var(--chrome-surface2); border: 1px solid var(--chrome-border2);
+  border-radius: 5px; padding: 3px 6px; width: 62px;
+}
+.clr-reset {
+  background: none; border: none; color: var(--chrome-muted);
+  cursor: pointer; font-size: 13px; padding: 2px 4px;
+  transition: color 0.15s;
+}
+.clr-reset:hover { color: var(--chrome-text); }
+
+/* Logo section */
+.logo-upload { margin-top: 4px; }
+.logo-inp {
+  width: 100%;
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  border-radius: 7px;
+  color: var(--chrome-text);
+  font-size: 11px; padding: 7px 9px;
+  outline: none; font-family: inherit; margin-top: 5px;
+  transition: border-color 0.2s;
+}
+.logo-inp:focus { border-color: var(--seafoam); }
+.logo-apply {
+  width: 100%; margin-top: 7px;
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  border-radius: 7px;
+  color: var(--chrome-text); font-size: 11px; font-weight: 600;
+  padding: 7px; cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.logo-apply:hover { border-color: var(--seafoam); color: var(--seafoam); }
+.logo-preview {
+  margin-top: 8px; border-radius: 8px; overflow: hidden;
+  background: var(--chrome-surface2);
+  border: 1px solid var(--chrome-border2);
+  padding: 8px; text-align: center; min-height: 44px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-preview img { max-height: 40px; max-width: 100%; object-fit: contain; }
+.logo-preview-empty { font-size: 11px; color: var(--chrome-muted); }
+.logo-hint { font-size: 10px; color: var(--chrome-muted); margin-top: 6px; line-height: 1.5; }
+
+/* Reset all button */
+#resetAllBtn {
+  width: 100%; margin-top: 6px;
+  background: transparent;
+  border: 1px solid var(--chrome-border2);
+  border-radius: 7px;
+  color: var(--chrome-muted); font-size: 10px; font-weight: 600;
+  padding: 6px; cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+#resetAllBtn:hover { border-color: #ef4444; color: #ef4444; }
+
+/* Element color pickers */
+#elColors { padding: 12px 16px; border-bottom: 1px solid var(--chrome-border); }
+.elclr-row {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px;
+}
+.elclr-row label { font-size: 11px; color: var(--chrome-text); font-weight: 500; }
+
+/* Toast */
+#toast {
+  position: fixed; bottom: 22px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white; font-size: 12px; font-weight: 700;
+  padding: 9px 18px; border-radius: 9px;
+  transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 3000; pointer-events: none;
+  box-shadow: 0 4px 16px rgba(34,197,94,0.35);
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body class="edit-mode">
+
+<!-- ══════════ TOOLBAR ══════════ -->
+<div id="toolbar">
+  <div class="tb-brand"><span class="tb-brand-icon">🏖️</span> Shore Stay Admin</div>
+  <div class="tb-divider"></div>
+
+  <select id="pageSelect">
+    <option value="home">🏠 Home Page</option>
+    <option value="renter">🌊 Renter Hub</option>
+    <option value="dashboard">📊 Homeowner Dashboard</option>
+  </select>
+
+  <div id="renterTabBar">
+    <button class="rtab active" data-rtab="rules">📋 Rules</button>
+    <button class="rtab" data-rtab="info">🏠 Info</button>
+    <button class="rtab" data-rtab="rooms">🛏 Rooms</button>
+    <button class="rtab" data-rtab="planner">📅 Planner</button>
+    <button class="rtab" data-rtab="guide">📍 Guide</button>
+  </div>
+
+  <div class="tb-divider"></div>
+  <button class="tb-btn active" id="editBtn">✏️ Edit</button>
+  <button class="tb-btn" id="prevBtn">👁 Preview</button>
+  <button class="tb-btn" id="undoBtn" disabled>↩ Undo</button>
+  <button class="tb-btn" id="saveBtn">💾 Save</button>
+  <button class="tb-btn" id="exportBtn">📤 Export</button>
+  <button class="tb-btn" id="importBtn">📥 Import</button>
+  <input type="file" id="importFile" accept=".json" style="display:none">
+  <button class="tb-btn" id="helpBtn">? Help</button>
+
+  <div class="tb-spacer"></div>
+
+  <div id="apiKeyWrap">
+    <label for="apiKeyInput">API Key</label>
+    <input id="apiKeyInput" type="password" placeholder="sk-ant-… (optional, for AI editing)" autocomplete="off">
+  </div>
+</div>
+
+<!-- ══════════ MAIN LAYOUT ══════════ -->
+<div id="layout">
+
+  <!-- ── PREVIEW PANE ── -->
+  <div id="previewPane">
+
+    <!-- ════ HOME PAGE ════ -->
+    <div class="ss-page on" id="page-home">
+      <nav class="home-nav" data-editable data-label="Nav bar background color" data-type="color-block" id="e-home-nav">
+        <div class="etag">Nav bar background color</div>
+        <div class="home-logo" data-editable data-label="Nav: Brand logo" data-type="text" id="e-logo">
+          <div class="etag">Nav: Brand logo</div>Shore Stay
+        </div>
+        <div class="home-nav-links">
+          <button class="btn-ghost-wh" data-editable data-label="Nav: Sign In button" data-type="button" id="e-nav-signin" style="position:relative">
+            <div class="etag">Nav: Sign In button</div>Homeowner Sign In
+          </button>
+          <button class="btn-ghost-wh" data-editable data-label="Nav: Create Account button" data-type="button" id="e-nav-register" style="position:relative">
+            <div class="etag">Nav: Create Account button</div>Create Account
+          </button>
+        </div>
+      </nav>
+
+      <div class="hero-wrap">
+        <div class="hero-card">
+          <div class="hero-eyebrow" data-editable data-label="Hero: Eyebrow tag" data-type="text" id="e-hero-eye">
+            <div class="etag">Hero: Eyebrow tag</div>Coastal Vacation Rental Platform
+          </div>
+          <h1 class="hero-h1" data-editable data-label="Hero: Main headline" data-type="text" id="e-hero-h1">
+            <div class="etag">Hero: Main headline</div>Shore Stay
+          </h1>
+          <p class="hero-sub" data-editable data-label="Hero: Subtitle" data-type="text" id="e-hero-sub">
+            <div class="etag">Hero: Subtitle</div>Everything your guests need — rules, local guide, room details, and a shared trip planner — all from one QR code scan.
+          </p>
+          <div class="hero-actions">
+            <button class="btn-primary" data-editable data-label="Hero: Primary CTA" data-type="button" id="e-hero-cta1" style="position:relative">
+              <div class="etag">Hero: Primary CTA</div>Homeowner Sign In
+            </button>
+            <button class="btn-outline" data-editable data-label="Hero: Secondary CTA" data-type="button" id="e-hero-cta2" style="position:relative">
+              <div class="etag">Hero: Secondary CTA</div>Create Account
+            </button>
+          </div>
+        </div>
+
+        <div class="feat-wrap">
+          <div class="feat-eyebrow" data-editable data-label="Features: Eyebrow" data-type="text" id="e-feat-eye">
+            <div class="etag">Features: Eyebrow</div>Everything included
+          </div>
+          <h2 class="feat-h" data-editable data-label="Features: Section heading" data-type="text" id="e-feat-h">
+            <div class="etag">Features: Section heading</div>Built for beach house stays
+          </h2>
+          <div class="feat-grid">
+            <div class="feat-card" data-editable data-label="Feature: Renter Hub card" data-type="card" id="e-feat-1">
+              <div class="etag">Feature: Renter Hub card</div>
+              <div class="fi-wrap">🌊</div>
+              <div class="ft">Renter Hub</div>
+              <div class="fd">QR-code access to house rules, local guide, room info, and a shared group trip planner.</div>
+            </div>
+            <div class="feat-card" data-editable data-label="Feature: Homeowner Tools card" data-type="card" id="e-feat-2">
+              <div class="etag">Feature: Homeowner Tools card</div>
+              <div class="fi-wrap">🏖️</div>
+              <div class="ft">Homeowner Tools</div>
+              <div class="fd">Manage properties, appliances, maintenance schedules, and generate QR codes instantly.</div>
+            </div>
+            <div class="feat-card" data-editable data-label="Feature: Property Manager card" data-type="card" id="e-feat-3">
+              <div class="etag">Feature: Property Manager card</div>
+              <div class="fi-wrap">🔑</div>
+              <div class="ft">Property Manager</div>
+              <div class="fd">Multi-property oversight with homeowner-granted permission levels and one unified view.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-footer">
+          <span data-editable data-label="Footer: Copyright text" data-type="text" id="e-footer" style="position:relative">
+            <div class="etag">Footer: Copyright text</div>© 2025 Shore Stay · All rights reserved · Made for coastal living
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ RENTER HUB ════ -->
+    <div class="ss-page" id="page-renter">
+      <div class="rh-header" data-editable data-label="Renter Hub header background" data-type="color-block" id="e-rh-header">
+        <div class="etag">Renter Hub header background</div>
+        <div class="rh-inner">
+          <div class="ss-brand-pill" data-editable data-label="Renter Hub: Brand label" data-type="text" id="e-rh-brand">
+            <div class="etag">Renter Hub: Brand label</div>Shore Stay
+          </div>
+          <div class="rh-prop-name" data-editable data-label="Renter Hub: Property name" data-type="text" id="e-rh-name">
+            <div class="etag">Renter Hub: Property name</div>The Blue Horizon Beach House
+          </div>
+          <div class="rh-addr" data-editable data-label="Renter Hub: Property address" data-type="text" id="e-rh-addr">
+            <div class="etag">Renter Hub: Property address</div>142 Shoreline Drive, Outer Banks, NC
+          </div>
+          <div class="rh-dates" data-editable data-label="Renter Hub: Booking dates" data-type="text" id="e-rh-dates">
+            <div class="etag">Renter Hub: Booking dates</div>🗓 Jul 4 – Jul 11, 2025
+          </div><br>
+          <button class="rh-planner-btn" data-editable data-label="Renter Hub: Planner sign-in" data-type="button" id="e-rh-plbtn" style="position:relative">
+            <div class="etag">Renter Hub: Planner sign-in</div>✏️ Trip Planner? Sign in →
+          </button>
+        </div>
+      </div>
+
+      <!-- Wave below header -->
+      <div class="wave-divider">
+        <svg viewBox="0 0 1440 36" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" height="36">
+          <path d="M0,18 C180,36 360,0 540,18 C720,36 900,0 1080,18 C1260,36 1440,0 1440,18 L1440,36 L0,36 Z" fill="#f2e8d8"/>
+        </svg>
+      </div>
+
+      <div class="rh-tabs">
+        <button class="rh-tab on" data-stab="rules"><span class="te">📋</span>Rules</button>
+        <button class="rh-tab" data-stab="info"><span class="te">🏠</span>Info</button>
+        <button class="rh-tab" data-stab="rooms"><span class="te">🛏️</span>Rooms</button>
+        <button class="rh-tab" data-stab="planner"><span class="te">📅</span>Planner</button>
+        <button class="rh-tab" data-stab="guide"><span class="te">📍</span>Guide</button>
+      </div>
+
+      <div class="rh-body">
+
+        <!-- RULES -->
+        <div class="rh-pane on" data-spane="rules">
+          <ul class="rules-list">
+            <li class="rule-item">
+              <span class="rule-ico">🚭</span>
+              <span class="rule-txt" data-editable data-label="Rule: No smoking" data-type="text" id="e-rule-1" style="position:relative">
+                <div class="etag">Rule: No smoking</div>No smoking anywhere on the property, including the deck, patio, and all outdoor spaces.
+              </span>
+            </li>
+            <li class="rule-item">
+              <span class="rule-ico">🐾</span>
+              <span class="rule-txt" data-editable data-label="Rule: Pets policy" data-type="text" id="e-rule-2" style="position:relative">
+                <div class="etag">Rule: Pets policy</div>No pets allowed. Certified service animals are welcome with prior written approval.
+              </span>
+            </li>
+            <li class="rule-item">
+              <span class="rule-ico">🔊</span>
+              <span class="rule-txt" data-editable data-label="Rule: Quiet hours" data-type="text" id="e-rule-3" style="position:relative">
+                <div class="etag">Rule: Quiet hours</div>Quiet hours are 10 PM – 8 AM. Please respect our neighbors and keep noise to a minimum.
+              </span>
+            </li>
+            <li class="rule-item">
+              <span class="rule-ico">🎉</span>
+              <span class="rule-txt" data-editable data-label="Rule: No parties" data-type="text" id="e-rule-4" style="position:relative">
+                <div class="etag">Rule: No parties</div>No parties or events exceeding the booked guest count without prior written consent.
+              </span>
+            </li>
+            <li class="rule-item">
+              <span class="rule-ico">🔒</span>
+              <span class="rule-txt" data-editable data-label="Rule: Check-out" data-type="text" id="e-rule-5" style="position:relative">
+                <div class="etag">Rule: Check-out</div>Check-out is by 10:00 AM. Please leave the property tidy and lock all doors and windows.
+              </span>
+            </li>
+            <li class="rule-item">
+              <span class="rule-ico">♻️</span>
+              <span class="rule-txt" data-editable data-label="Rule: Recycling" data-type="text" id="e-rule-6" style="position:relative">
+                <div class="etag">Rule: Recycling</div>Please sort trash and recycling. Blue bin for recycling, black bin for trash — in the mudroom.
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- INFO -->
+        <div class="rh-pane" data-spane="info">
+          <div class="info-grid">
+            <div class="info-card">
+              <div class="info-ch">
+                <div class="info-ico-wrap">📶</div>
+                <span class="info-ttl" data-editable data-label="Info: WiFi title" data-type="text" id="e-info-wifi-t" style="position:relative">
+                  <div class="etag">Info: WiFi title</div>WiFi
+                </span>
+              </div>
+              <div class="info-body" data-editable data-label="Info: WiFi credentials" data-type="text" id="e-info-wifi-b" style="position:relative">
+                <div class="etag">Info: WiFi credentials</div>Network: BlueHorizon_Guest · Password: OBX2025Surf!
+              </div>
+            </div>
+            <div class="info-card">
+              <div class="info-ch">
+                <div class="info-ico-wrap">🅿️</div>
+                <span class="info-ttl" data-editable data-label="Info: Parking title" data-type="text" id="e-info-park-t" style="position:relative">
+                  <div class="etag">Info: Parking title</div>Parking
+                </span>
+              </div>
+              <div class="info-body" data-editable data-label="Info: Parking details" data-type="text" id="e-info-park-b" style="position:relative">
+                <div class="etag">Info: Parking details</div>Up to 4 vehicles in the driveway. No overnight street parking. Beach lot 7 is free with your wristband.
+              </div>
+            </div>
+            <div class="info-card">
+              <div class="info-ch">
+                <div class="info-ico-wrap">🗑️</div>
+                <span class="info-ttl" data-editable data-label="Info: Trash title" data-type="text" id="e-info-trash-t" style="position:relative">
+                  <div class="etag">Info: Trash title</div>Trash & Recycling
+                </span>
+              </div>
+              <div class="info-body" data-editable data-label="Info: Trash schedule" data-type="text" id="e-info-trash-b" style="position:relative">
+                <div class="etag">Info: Trash schedule</div>Trash: Tuesday & Friday mornings — bins at driveway end by 7 AM. Recycling: blue bin on Thursdays.
+              </div>
+            </div>
+            <div class="info-card">
+              <div class="info-ch">
+                <div class="info-ico-wrap">🏖️</div>
+                <span class="info-ttl" data-editable data-label="Info: Beach access title" data-type="text" id="e-info-beach-t" style="position:relative">
+                  <div class="etag">Info: Beach access title</div>Beach Access
+                </span>
+              </div>
+              <div class="info-body" data-editable data-label="Info: Beach access details" data-type="text" id="e-info-beach-b" style="position:relative">
+                <div class="etag">Info: Beach access details</div>Private access via wooden walkway at the rear. Surfboards, boogie boards, and beach chairs in the storage shed.
+              </div>
+            </div>
+            <div class="info-card">
+              <div class="info-ch">
+                <div class="info-ico-wrap">🔑</div>
+                <span class="info-ttl" data-editable data-label="Info: Entry code title" data-type="text" id="e-info-key-t" style="position:relative">
+                  <div class="etag">Info: Entry code title</div>Entry & Key Code
+                </span>
+              </div>
+              <div class="info-body" data-editable data-label="Info: Entry code details" data-type="text" id="e-info-key-b" style="position:relative">
+                <div class="etag">Info: Entry code details</div>Front door keypad: 4821#. Lock up each time you leave. Spare key in lockbox under porch (code: 7733).
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROOMS -->
+        <div class="rh-pane" data-spane="rooms">
+          <div class="rooms-grid">
+            <div class="room-card">
+              <div class="room-thumb">🌊</div>
+              <div class="room-body">
+                <div class="room-name" data-editable data-label="Room: Master Suite name" data-type="text" id="e-room-1n" style="position:relative">
+                  <div class="etag">Room: Master Suite name</div>Master Suite
+                </div>
+                <div class="room-type-badge">King · Ocean View</div>
+                <div class="room-desc" data-editable data-label="Room: Master Suite description" data-type="text" id="e-room-1d" style="position:relative">
+                  <div class="etag">Room: Master Suite description</div>Private balcony, soaking tub, rainfall shower, Smart TV, and blackout curtains.
+                </div>
+              </div>
+            </div>
+            <div class="room-card">
+              <div class="room-thumb" style="background:linear-gradient(135deg,#1a6a9c,#56cfe1)">🛏</div>
+              <div class="room-body">
+                <div class="room-name" data-editable data-label="Room: Bunk Room name" data-type="text" id="e-room-2n" style="position:relative">
+                  <div class="etag">Room: Bunk Room name</div>Bunk Room
+                </div>
+                <div class="room-type-badge">4 Bunks · Sleeps 8</div>
+                <div class="room-desc" data-editable data-label="Room: Bunk Room description" data-type="text" id="e-room-2d" style="position:relative">
+                  <div class="etag">Room: Bunk Room description</div>Twin-over-twin bunks, reading lights, and cubbies for each bunk. Perfect for kids.
+                </div>
+              </div>
+            </div>
+            <div class="room-card">
+              <div class="room-thumb" style="background:linear-gradient(135deg,#0f4c75,#56cfe1 180%)">🌿</div>
+              <div class="room-body">
+                <div class="room-name" data-editable data-label="Room: Queen Room name" data-type="text" id="e-room-3n" style="position:relative">
+                  <div class="etag">Room: Queen Room name</div>Queen Room
+                </div>
+                <div class="room-type-badge">Queen · Garden View</div>
+                <div class="room-desc" data-editable data-label="Room: Queen Room description" data-type="text" id="e-room-3d" style="position:relative">
+                  <div class="etag">Room: Queen Room description</div>Cozy garden-side room with ceiling fan. Shared hall bath. Great for a couple.
+                </div>
+              </div>
+            </div>
+            <div class="room-card">
+              <div class="room-thumb" style="background:linear-gradient(135deg,#071e36,#1565a0)">✨</div>
+              <div class="room-body">
+                <div class="room-name" data-editable data-label="Room: Loft Suite name" data-type="text" id="e-room-4n" style="position:relative">
+                  <div class="etag">Room: Loft Suite name</div>Loft Suite
+                </div>
+                <div class="room-type-badge">King · Private Deck</div>
+                <div class="room-desc" data-editable data-label="Room: Loft Suite description" data-type="text" id="e-room-4d" style="position:relative">
+                  <div class="etag">Room: Loft Suite description</div>Exposed beams, skylight, private deck, mini fridge, and Keurig. Most requested room!
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PLANNER -->
+        <div class="rh-pane" data-spane="planner">
+          <div class="plan-day">
+            <div class="plan-date-hdr" data-editable data-label="Planner: Friday heading" data-type="text" id="e-plan-d1" style="position:relative">
+              <div class="etag">Planner: Friday heading</div>Friday, July 4
+            </div>
+            <div class="plan-evt">
+              <div class="plan-time plan-time-border">8:00<br>AM</div>
+              <div>
+                <div class="plan-name" data-editable data-label="Planner: Surf lesson event" data-type="text" id="e-plan-e1" style="position:relative">
+                  <div class="etag">Planner: Surf lesson event</div>Sunrise Surf Lesson @ OBX Surf School
+                </div>
+                <div class="plan-cat">🏄 Activity · 2 hrs</div>
+              </div>
+            </div>
+            <div class="plan-evt">
+              <div class="plan-time plan-time-border">7:00<br>PM</div>
+              <div>
+                <div class="plan-name" data-editable data-label="Planner: Dinner event" data-type="text" id="e-plan-e2" style="position:relative">
+                  <div class="etag">Planner: Dinner event</div>Dinner @ The Oceanfront Grill · Res. for 8
+                </div>
+                <div class="plan-cat">🍽️ Dining</div>
+              </div>
+            </div>
+          </div>
+          <div class="plan-day">
+            <div class="plan-date-hdr" data-editable data-label="Planner: Saturday heading" data-type="text" id="e-plan-d2" style="position:relative">
+              <div class="etag">Planner: Saturday heading</div>Saturday, July 5
+            </div>
+            <div class="plan-evt">
+              <div class="plan-time plan-time-border">9:00<br>AM</div>
+              <div>
+                <div class="plan-name" data-editable data-label="Planner: Golf event" data-type="text" id="e-plan-e3" style="position:relative">
+                  <div class="etag">Planner: Golf event</div>Morning Tee Time @ Sea Pines Golf Club
+                </div>
+                <div class="plan-cat">⛳ Golf · 18 holes</div>
+              </div>
+            </div>
+            <div class="plan-evt">
+              <div class="plan-time plan-time-border">6:30<br>PM</div>
+              <div>
+                <div class="plan-name" data-editable data-label="Planner: Bonfire event" data-type="text" id="e-plan-e4" style="position:relative">
+                  <div class="etag">Planner: Bonfire event</div>Beach Bonfire & Fireworks at the property
+                </div>
+                <div class="plan-cat">🔥 Group Event</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GUIDE -->
+        <div class="rh-pane" data-spane="guide">
+          <div class="guide-cat">
+            <div class="guide-cat-h" data-editable data-label="Guide: Dining heading" data-type="text" id="e-guide-cat1" style="position:relative">
+              <div class="etag">Guide: Dining heading</div>🍽️ Dining
+            </div>
+            <div class="guide-items">
+              <div class="guide-item">
+                <div class="guide-name" data-editable data-label="Guide: Restaurant 1 name" data-type="text" id="e-g-r1" style="position:relative">
+                  <div class="etag">Guide: Restaurant 1 name</div>The Oceanfront Grill
+                </div>
+                <div class="guide-desc" data-editable data-label="Guide: Restaurant 1 description" data-type="text" id="e-g-r1d" style="position:relative">
+                  <div class="etag">Guide: Restaurant 1 description</div>Upscale seafood with panoramic ocean views. Great for groups. Reservations strongly recommended.
+                </div>
+              </div>
+              <div class="guide-item">
+                <div class="guide-name" data-editable data-label="Guide: Café name" data-type="text" id="e-g-r2" style="position:relative">
+                  <div class="etag">Guide: Café name</div>Salty Mug Coffee
+                </div>
+                <div class="guide-desc" data-editable data-label="Guide: Café description" data-type="text" id="e-g-r2d" style="position:relative">
+                  <div class="etag">Guide: Café description</div>Local surf-culture coffee shop. Best açaí bowls and cold brew on the island. Opens at 6 AM.
+                </div>
+              </div>
+              <div class="guide-item">
+                <div class="guide-name" data-editable data-label="Guide: Crab shack name" data-type="text" id="e-g-r3" style="position:relative">
+                  <div class="etag">Guide: Crab shack name</div>Peg's Crab Shack
+                </div>
+                <div class="guide-desc" data-editable data-label="Guide: Crab shack description" data-type="text" id="e-g-r3d" style="position:relative">
+                  <div class="etag">Guide: Crab shack description</div>Casual waterfront spot — legendary crab legs and hushpuppies. Cash only, BYOB, worth the wait.
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="guide-cat">
+            <div class="guide-cat-h" data-editable data-label="Guide: Activities heading" data-type="text" id="e-guide-cat2" style="position:relative">
+              <div class="etag">Guide: Activities heading</div>🏄 Activities
+            </div>
+            <div class="guide-items">
+              <div class="guide-item">
+                <div class="guide-name" data-editable data-label="Guide: Surf school name" data-type="text" id="e-g-a1" style="position:relative">
+                  <div class="etag">Guide: Surf school name</div>OBX Surf School
+                </div>
+                <div class="guide-desc" data-editable data-label="Guide: Surf school description" data-type="text" id="e-g-a1d" style="position:relative">
+                  <div class="etag">Guide: Surf school description</div>Lessons for all levels, sunrise sessions available. Board and wetsuit rentals on-site.
+                </div>
+              </div>
+              <div class="guide-item">
+                <div class="guide-name" data-editable data-label="Guide: Kayak tour name" data-type="text" id="e-g-a2" style="position:relative">
+                  <div class="etag">Guide: Kayak tour name</div>Coastal Kayak Tours
+                </div>
+                <div class="guide-desc" data-editable data-label="Guide: Kayak tour description" data-type="text" id="e-g-a2d" style="position:relative">
+                  <div class="etag">Guide: Kayak tour description</div>Guided sunrise kayak tours through the marsh. Family-friendly, 2 hours, all gear included.
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="guide-cat">
+            <div class="guide-cat-h" data-editable data-label="Guide: Entertainment heading" data-type="text" id="e-guide-cat3" style="position:relative">
+              <div class="etag">Guide: Entertainment heading</div>🎶 Bars & Entertainment
+            </div>
+            <div class="guide-items">
+              <div class="guide-item">
+                <div class="guide-name" data-editable data-label="Guide: Bar name" data-type="text" id="e-g-b1" style="position:relative">
+                  <div class="etag">Guide: Bar name</div>The Driftwood Lounge
+                </div>
+                <div class="guide-desc" data-editable data-label="Guide: Bar description" data-type="text" id="e-g-b1d" style="position:relative">
+                  <div class="etag">Guide: Bar description</div>Beachfront bar with live music Thu–Sun. Signature frozen drinks and late-night tacos.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════ DASHBOARD ════ -->
+    <div class="ss-page" id="page-dashboard">
+      <div class="dash-header" data-editable data-label="Dashboard header background" data-type="color-block" id="e-dash-header">
+        <div class="etag">Dashboard header background</div>
+        <div class="dash-inner">
+          <div class="ss-brand-pill" data-editable data-label="Dashboard: Brand label" data-type="text" id="e-dash-brand">
+            <div class="etag">Dashboard: Brand label</div>Shore Stay
+          </div>
+          <div class="dash-name" data-editable data-label="Dashboard: Welcome greeting" data-type="text" id="e-dash-greet">
+            <div class="etag">Dashboard: Welcome greeting</div>Welcome back, Sarah 👋
+          </div>
+          <div class="dash-sub" data-editable data-label="Dashboard: Header subtitle" data-type="text" id="e-dash-sub">
+            <div class="etag">Dashboard: Header subtitle</div>Manage your coastal properties
+          </div>
+          <div class="dash-stats">
+            <div class="dash-stat">
+              <div class="dash-stat-n" data-editable data-label="Dashboard: Properties stat" data-type="text" id="e-stat-props" style="position:relative">
+                <div class="etag">Dashboard: Properties stat</div>1
+              </div>
+              <div class="dash-stat-l">Properties</div>
+            </div>
+            <div class="dash-stat">
+              <div class="dash-stat-n" data-editable data-label="Dashboard: Bookings stat" data-type="text" id="e-stat-books" style="position:relative">
+                <div class="etag">Dashboard: Bookings stat</div>3
+              </div>
+              <div class="dash-stat-l">Bookings</div>
+            </div>
+            <div class="dash-stat">
+              <div class="dash-stat-n" data-editable data-label="Dashboard: Tasks stat" data-type="text" id="e-stat-tasks" style="position:relative">
+                <div class="etag">Dashboard: Tasks stat</div>3
+              </div>
+              <div class="dash-stat-l">Tasks due</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wave below header -->
+      <div class="wave-divider">
+        <svg viewBox="0 0 1440 36" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" height="36">
+          <path d="M0,18 C240,36 480,0 720,18 C960,36 1200,0 1440,18 L1440,36 L0,36 Z" fill="#f2e8d8"/>
+        </svg>
+      </div>
+
+      <div class="dash-body">
+        <div class="dash-row">
+          <span class="dash-sec-ttl" data-editable data-label="Dashboard: Properties heading" data-type="text" id="e-dash-proph" style="position:relative">
+            <div class="etag">Dashboard: Properties heading</div>Your Properties
+          </span>
+          <button class="dash-add-btn" data-editable data-label="Dashboard: Add property button" data-type="button" id="e-dash-addbtn" style="position:relative">
+            <div class="etag">Dashboard: Add property button</div>+ Add Property
+          </button>
+        </div>
+
+        <div class="prop-card">
+          <div class="prop-card-top">
+            <div>
+              <div class="prop-name" data-editable data-label="Property card: Name" data-type="text" id="e-prop-name" style="position:relative">
+                <div class="etag">Property card: Name</div>The Blue Horizon Beach House
+              </div>
+              <div class="prop-addr" data-editable data-label="Property card: Address" data-type="text" id="e-prop-addr" style="position:relative">
+                <div class="etag">Property card: Address</div>142 Shoreline Drive, Outer Banks, NC
+              </div>
+            </div>
+            <span style="font-size:28px">🏠</span>
+          </div>
+          <div class="prop-card-body">
+            <div class="prop-meta">
+              <div class="prop-stat">
+                <span class="prop-stat-ico">📅</span>
+                <span class="prop-stat-txt" data-editable data-label="Property: Bookings count" data-type="text" id="e-prop-book" style="position:relative">
+                  <div class="etag">Property: Bookings count</div>3 bookings
+                </span>
+              </div>
+              <div class="prop-stat">
+                <span class="prop-stat-ico">🛏</span>
+                <span class="prop-stat-txt" data-editable data-label="Property: Rooms count" data-type="text" id="e-prop-rooms" style="position:relative">
+                  <div class="etag">Property: Rooms count</div>4 rooms
+                </span>
+              </div>
+              <div class="prop-stat">
+                <span class="prop-stat-ico">🔧</span>
+                <span class="prop-stat-txt" data-editable data-label="Property: Appliances count" data-type="text" id="e-prop-apps" style="position:relative">
+                  <div class="etag">Property: Appliances count</div>8 appliances tracked
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-row" style="margin-top:22px">
+          <span class="dash-sec-ttl" data-editable data-label="Dashboard: Maintenance heading" data-type="text" id="e-maint-h" style="position:relative">
+            <div class="etag">Dashboard: Maintenance heading</div>Upcoming Maintenance
+          </span>
+        </div>
+
+        <div class="maint-card">
+          <div class="maint-left">
+            <div class="maint-ico-wrap warn">🔧</div>
+            <div>
+              <div class="maint-ttl" data-editable data-label="Maintenance 1: Title" data-type="text" id="e-maint-1t" style="position:relative">
+                <div class="etag">Maintenance 1: Title</div>Replace HVAC Filter
+              </div>
+              <div class="maint-due" data-editable data-label="Maintenance 1: Due date" data-type="text" id="e-maint-1d" style="position:relative">
+                <div class="etag">Maintenance 1: Due date</div>Due: May 15, 2025
+              </div>
+            </div>
+          </div>
+          <span class="maint-badge badge-upcoming">Upcoming</span>
+        </div>
+
+        <div class="maint-card">
+          <div class="maint-left">
+            <div class="maint-ico-wrap ok">🐛</div>
+            <div>
+              <div class="maint-ttl" data-editable data-label="Maintenance 2: Title" data-type="text" id="e-maint-2t" style="position:relative">
+                <div class="etag">Maintenance 2: Title</div>Pest Control Service
+              </div>
+              <div class="maint-due" data-editable data-label="Maintenance 2: Due date" data-type="text" id="e-maint-2d" style="position:relative">
+                <div class="etag">Maintenance 2: Due date</div>Due: June 1, 2025
+              </div>
+            </div>
+          </div>
+          <span class="maint-badge badge-ok">Scheduled</span>
+        </div>
+
+        <div class="maint-card">
+          <div class="maint-left">
+            <div class="maint-ico-wrap info">💧</div>
+            <div>
+              <div class="maint-ttl" data-editable data-label="Maintenance 3: Title" data-type="text" id="e-maint-3t" style="position:relative">
+                <div class="etag">Maintenance 3: Title</div>Winterize Outdoor Shower
+              </div>
+              <div class="maint-due" data-editable data-label="Maintenance 3: Due date" data-type="text" id="e-maint-3d" style="position:relative">
+                <div class="etag">Maintenance 3: Due date</div>Due: November 1, 2025
+              </div>
+            </div>
+          </div>
+          <span class="maint-badge badge-info">On Track</span>
+        </div>
+
+        <div class="empty-state">
+          <div class="empty-ico">🏖️</div>
+          <div class="empty-ttl" data-editable data-label="Empty state: Title" data-type="text" id="e-empty-ttl" style="position:relative">
+            <div class="etag">Empty state: Title</div>No properties yet
+          </div>
+          <div class="empty-dsc" data-editable data-label="Empty state: Description" data-type="text" id="e-empty-dsc" style="position:relative">
+            <div class="etag">Empty state: Description</div>Add your first property to start managing stays and generating QR codes for your guests.
+          </div>
+          <div class="empty-cta" data-editable data-label="Empty state: CTA button" data-type="button" id="e-empty-cta" style="position:relative">
+            <div class="etag">Empty state: CTA button</div>Create your first property
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /previewPane -->
+
+  <!-- ── SIDEBAR ── -->
+  <div id="sidebar">
+
+    <!-- ════ THEME & COLORS PANEL (always visible) ════ -->
+    <div id="themePanel">
+      <div id="themeToggle">
+        <span id="themeToggleLabel">🎨 Theme Colors &amp; Logo</span>
+        <span id="themeChev" class="open">▼</span>
+      </div>
+      <div id="themeBody" class="open">
+
+        <!-- Global brand colors -->
+        <div class="clr-group">
+          <div class="clr-group-title">Brand Colors</div>
+          <div class="clr-row">
+            <label>Ocean Blue</label>
+            <div class="clr-ctrl">
+              <input type="color" class="clr-swatch" id="clr-ocean" value="#0f4c75" data-var="ocean" data-default="#0f4c75">
+              <input type="text" class="clr-hex" id="hex-ocean" value="#0f4c75" maxlength="7">
+              <button class="clr-reset" data-target="ocean" title="Reset">↺</button>
+            </div>
+          </div>
+          <div class="clr-row">
+            <label>Seafoam</label>
+            <div class="clr-ctrl">
+              <input type="color" class="clr-swatch" id="clr-seafoam" value="#56cfe1" data-var="seafoam" data-default="#56cfe1">
+              <input type="text" class="clr-hex" id="hex-seafoam" value="#56cfe1" maxlength="7">
+              <button class="clr-reset" data-target="seafoam" title="Reset">↺</button>
+            </div>
+          </div>
+          <div class="clr-row">
+            <label>Sand / BG</label>
+            <div class="clr-ctrl">
+              <input type="color" class="clr-swatch" id="clr-sand" value="#f5e0c3" data-var="sand" data-default="#f5e0c3">
+              <input type="text" class="clr-hex" id="hex-sand" value="#f5e0c3" maxlength="7">
+              <button class="clr-reset" data-target="sand" title="Reset">↺</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Header / nav colors -->
+        <div class="clr-group">
+          <div class="clr-group-title">Header &amp; Nav</div>
+          <div class="clr-row">
+            <label>Nav Dark</label>
+            <div class="clr-ctrl">
+              <input type="color" class="clr-swatch" id="clr-nav" value="#071e36" data-var="nav" data-default="#071e36">
+              <input type="text" class="clr-hex" id="hex-nav" value="#071e36" maxlength="7">
+              <button class="clr-reset" data-target="nav" title="Reset">↺</button>
+            </div>
+          </div>
+          <div class="clr-row">
+            <label>Header Mid</label>
+            <div class="clr-ctrl">
+              <input type="color" class="clr-swatch" id="clr-hdr" value="#0f4c75" data-var="hdr" data-default="#0f4c75">
+              <input type="text" class="clr-hex" id="hex-hdr" value="#0f4c75" maxlength="7">
+              <button class="clr-reset" data-target="hdr" title="Reset">↺</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="clr-group">
+          <div class="clr-group-title">Buttons</div>
+          <div class="clr-row">
+            <label>Button BG</label>
+            <div class="clr-ctrl">
+              <input type="color" class="clr-swatch" id="clr-btn" value="#0f4c75" data-var="btn" data-default="#0f4c75">
+              <input type="text" class="clr-hex" id="hex-btn" value="#0f4c75" maxlength="7">
+              <button class="clr-reset" data-target="btn" title="Reset">↺</button>
+            </div>
+          </div>
+          <div class="clr-row">
+            <label>Button Text</label>
+            <div class="clr-ctrl">
+              <input type="color" class="clr-swatch" id="clr-btntext" value="#ffffff" data-var="btntext" data-default="#ffffff">
+              <input type="text" class="clr-hex" id="hex-btntext" value="#ffffff" maxlength="7">
+              <button class="clr-reset" data-target="btntext" title="Reset">↺</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Logo image -->
+        <div class="clr-group">
+          <div class="clr-group-title">Logo Image</div>
+          <div class="logo-hint">Put your PNG/SVG in <code>frontend/public/</code> then type the filename below (e.g. <code>logo.png</code>)</div>
+          <input type="text" class="logo-inp" id="logoFilename" placeholder="logo.png or full URL…">
+          <button class="logo-apply" id="applyLogoBtn">Apply Logo to Nav</button>
+          <div class="logo-preview" id="logoPreview">
+            <span class="logo-preview-empty">Logo preview will appear here</span>
+          </div>
+          <button class="logo-apply" id="removeLogoBtn" style="margin-top:5px;color:var(--chrome-muted)">✕ Remove logo (use text)</button>
+        </div>
+
+        <button id="resetAllBtn">↺ Reset all colors to defaults</button>
+      </div>
+    </div>
+
+    <div id="noSel">
+      <div class="nosel-icon">👆</div>
+      <p>Click any <strong>glowing element</strong> in the preview to select it and start editing.</p>
+      <p class="sub">Open in your browser at<br><strong>localhost:4174/admin.html</strong></p>
+    </div>
+
+    <div id="hasSel">
+      <div class="sb-sec">
+        <div class="sb-lbl">Selected</div>
+        <div id="elLabel">—</div>
+        <div id="elMeta">—</div>
+        <div id="elPreview"></div>
+      </div>
+
+      <!-- Per-element color pickers -->
+      <div id="elColors">
+        <div class="sb-lbl">Element Colors</div>
+        <div class="elclr-row">
+          <label>Text color</label>
+          <div class="clr-ctrl">
+            <input type="color" class="clr-swatch" id="clr-el-text" value="#000000">
+            <input type="text" class="clr-hex" id="hex-el-text" value="#000000" maxlength="7">
+          </div>
+        </div>
+        <div class="elclr-row">
+          <label>Background</label>
+          <div class="clr-ctrl">
+            <input type="color" class="clr-swatch" id="clr-el-bg" value="#ffffff">
+            <input type="text" class="clr-hex" id="hex-el-bg" value="#ffffff" maxlength="7">
+          </div>
+        </div>
+      </div>
+
+      <div id="directEditWrap">
+        <div class="sb-lbl">✏️ Edit Directly — Free &amp; Instant</div>
+        <textarea id="directEditArea" placeholder="Type your new text here…"></textarea>
+        <div id="directApplyRow">
+          <button id="directApplyBtn" disabled>✔ Apply Change</button>
+          <button id="directClearBtn">↺ Reset</button>
+        </div>
+        <div class="direct-hint">Ctrl+Enter to apply · ↩ Undo in toolbar</div>
+      </div>
+
+      <div class="sb-sec">
+        <div class="sb-lbl">Quick Edits</div>
+        <button class="qbtn" data-qa="fresh">✏️ Rewrite with a fresh angle</button>
+        <button class="qbtn" data-qa="shorter">✂️ Make it shorter &amp; snappier</button>
+        <button class="qbtn" data-qa="punchier">🔥 Make it punchier &amp; exciting</button>
+        <button class="qbtn" data-qa="coastal">🌊 Give it a coastal beach-house vibe</button>
+        <button class="qbtn" data-qa="professional">💼 Make it more professional</button>
+        <button class="qbtn" data-qa="color">🎨 Change color / visual style</button>
+      </div>
+
+      <div id="aiToggle">
+        <span id="aiToggleLabel">✨ AI Chat (needs API key)</span>
+        <span id="aiToggleChev">▼</span>
+      </div>
+      <div id="aiBody">
+        <div id="chatMsgs"></div>
+        <div id="chatBar">
+          <textarea id="chatIn" placeholder="e.g. Make this warmer and mention the ocean view…"></textarea>
+          <button id="sendBtn">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- HELP MODAL -->
+<div id="helpModal">
+  <div id="helpBox">
+    <h2>🏖️ Shore Stay Admin — How It Works</h2>
+    <p>Edit any text or button on your Shore Stay website — no coding needed!</p>
+    <ul>
+      <li><strong>Switch pages</strong> with the dropdown at the top</li>
+      <li><strong>Renter Hub tabs</strong> appear in the toolbar when that page is selected</li>
+      <li><strong>Hover</strong> any element — it glows blue with a label</li>
+      <li><strong>Click</strong> to select — the edit box fills with current text</li>
+      <li><strong>Edit the text</strong> and click Apply Change (or Ctrl+Enter)</li>
+      <li><strong>↩ Undo</strong> in the toolbar reverts any change</li>
+      <li><strong>👁 Preview</strong> hides edit outlines to see the real look</li>
+    </ul>
+    <p style="margin-top:14px">Open in your browser at <strong>http://localhost:4174/admin.html</strong> for full interactivity.</p>
+    <button class="help-close" onclick="document.getElementById('helpModal').classList.remove('on')">Got it, let's edit! →</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let editMode = true;
+let selEl = null;
+let undoStack = [];
+let apiKey = localStorage.getItem('ss_admin_key') || '';
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (apiKey) {
+    const inp = document.getElementById('apiKeyInput');
+    inp.value = apiKey;
+    inp.classList.add('has-key');
+  }
+  setupEditables();
+  setupPageSwitcher();
+  setupRenterToolbarTabs();
+  setupPreviewTabs();
+  setupToolbar();
+  setupDirectEdit();
+  setupAiToggle();
+  setupChat();
+  setupHelp();
+  setupThemePanel();
+  setupElementColors();
+  setupSaveExport();
+  restoreSavedEdits();
+  disableQuickBtns();
+});
+
+function setupEditables() {
+  document.querySelectorAll('[data-editable]').forEach(el => {
+    el.addEventListener('click', e => {
+      if (!editMode) return;
+      e.stopPropagation();
+      pickEl(el);
+    });
+  });
+  document.getElementById('previewPane').addEventListener('click', () => {
+    if (editMode) clearSel();
+  });
+}
+
+function pickEl(el) {
+  if (selEl) selEl.classList.remove('sel');
+  selEl = el;
+  el.classList.add('sel');
+
+  const label = el.getAttribute('data-label') || 'Element';
+  const type = el.getAttribute('data-type') || 'text';
+  const etag = el.querySelector('.etag');
+  const raw = el.innerText.replace(etag?.innerText || '', '').trim().replace(/\s+/g,' ');
+  const preview = raw.length > 90 ? raw.slice(0,90) + '…' : raw;
+
+  document.getElementById('elLabel').textContent = label;
+  document.getElementById('elMeta').textContent = 'Type: ' + ({text:'Text content',button:'Button label',card:'Content card'}[type] || type);
+  document.getElementById('elPreview').textContent = preview;
+
+  document.getElementById('directEditArea').value = raw;
+  document.getElementById('directApplyBtn').disabled = false;
+
+  document.getElementById('noSel').style.display = 'none';
+  const hs = document.getElementById('hasSel');
+  hs.style.display = 'flex';
+  hs.classList.add('on');
+
+  enableQuickBtns();
+  syncElColorPickers(el);
+
+  if (type === 'color-block') {
+    // For background areas, skip text focus — scroll to color pickers and flash them
+    setTimeout(() => {
+      const elColors = document.getElementById('elColors');
+      elColors.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      elColors.style.outline = '2px solid var(--seafoam)';
+      elColors.style.borderRadius = '6px';
+      setTimeout(() => { elColors.style.outline = ''; elColors.style.borderRadius = ''; }, 1400);
+      document.getElementById('clr-el-bg').focus();
+    }, 80);
+    addMsg('sys', '🎨 Selected: ' + label + ' — use the Background color picker below');
+  } else {
+    setTimeout(() => document.getElementById('directEditArea').focus(), 50);
+    addMsg('sys', '📌 Selected: ' + label);
+  }
+}
+
+function clearSel() {
+  if (selEl) { selEl.classList.remove('sel'); selEl = null; }
+  document.getElementById('noSel').style.display = '';
+  const hs = document.getElementById('hasSel');
+  hs.style.display = 'none';
+  hs.classList.remove('on');
+  document.getElementById('directEditArea').value = '';
+  document.getElementById('directApplyBtn').disabled = true;
+  disableQuickBtns();
+}
+
+function setupPageSwitcher() {
+  document.getElementById('pageSelect').addEventListener('change', e => {
+    goPage(e.target.value);
+    clearSel();
+  });
+}
+
+function goPage(id) {
+  document.querySelectorAll('.ss-page').forEach(p => p.classList.remove('on'));
+  const p = document.getElementById('page-' + id);
+  if (p) p.classList.add('on');
+  document.getElementById('renterTabBar').classList.toggle('visible', id === 'renter');
+}
+
+function setupRenterToolbarTabs() {
+  document.querySelectorAll('.rtab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-rtab');
+      document.querySelectorAll('.rtab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      syncPreviewTabs(tab);
+      clearSel();
+    });
+  });
+}
+
+function syncPreviewTabs(tab) {
+  document.querySelectorAll('[data-stab]').forEach(b => b.classList.toggle('on', b.getAttribute('data-stab') === tab));
+  document.querySelectorAll('[data-spane]').forEach(p => p.classList.toggle('on', p.getAttribute('data-spane') === tab));
+}
+
+function setupPreviewTabs() {
+  document.querySelectorAll('[data-stab]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const tab = btn.getAttribute('data-stab');
+      document.querySelectorAll('.rtab').forEach(b => b.classList.toggle('active', b.getAttribute('data-rtab') === tab));
+      syncPreviewTabs(tab);
+      clearSel();
+    });
+  });
+}
+
+function setupToolbar() {
+  document.getElementById('editBtn').addEventListener('click', () => {
+    editMode = true;
+    document.body.classList.add('edit-mode');
+    document.getElementById('editBtn').classList.add('active');
+    document.getElementById('prevBtn').classList.remove('active');
+  });
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    editMode = false;
+    document.body.classList.remove('edit-mode');
+    clearSel();
+    document.getElementById('prevBtn').classList.add('active');
+    document.getElementById('editBtn').classList.remove('active');
+  });
+  document.getElementById('undoBtn').addEventListener('click', doUndo);
+  const ki = document.getElementById('apiKeyInput');
+  ki.addEventListener('input', () => {
+    apiKey = ki.value.trim();
+    localStorage.setItem('ss_admin_key', apiKey);
+    ki.classList.toggle('has-key', apiKey.length > 10);
+  });
+}
+
+function pushUndo(el) {
+  undoStack.push({ id: el.id, html: el.innerHTML, style: el.getAttribute('style') || '' });
+  document.getElementById('undoBtn').disabled = false;
+}
+
+function doUndo() {
+  if (!undoStack.length) return;
+  const last = undoStack.pop();
+  const el = document.getElementById(last.id);
+  if (el) {
+    el.innerHTML = last.html;
+    if (last.style) el.setAttribute('style', last.style);
+    else el.removeAttribute('style');
+    addMsg('sys', '↩ Change undone');
+  }
+  if (!undoStack.length) document.getElementById('undoBtn').disabled = true;
+}
+
+function setupDirectEdit() {
+  document.getElementById('directApplyBtn').addEventListener('click', applyDirect);
+  document.getElementById('directEditArea').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); applyDirect(); }
+  });
+  document.getElementById('directClearBtn').addEventListener('click', () => {
+    if (!selEl) return;
+    const etag = selEl.querySelector('.etag');
+    const raw = selEl.innerText.replace(etag?.innerText || '', '').trim().replace(/\s+/g,' ');
+    document.getElementById('directEditArea').value = raw;
+    document.getElementById('directEditArea').focus();
+  });
+}
+
+function applyDirect() {
+  if (!selEl) return;
+  const newText = document.getElementById('directEditArea').value.trim();
+  if (!newText) return;
+
+  pushUndo(selEl);
+  const etag = selEl.querySelector('.etag');
+  const tagHTML = etag ? etag.outerHTML : '';
+  const type = selEl.getAttribute('data-type') || 'text';
+
+  if (type === 'card') {
+    const iconEl = selEl.querySelector('.fi-wrap') || selEl.querySelector('.fi');
+    const iconHTML = iconEl ? iconEl.outerHTML : '';
+    const lines = newText.split('\n').filter(l => l.trim());
+    const title = lines[0] || '';
+    const desc = lines.slice(1).join(' ') || selEl.querySelector('.fd')?.textContent || '';
+    selEl.innerHTML = tagHTML + iconHTML + `<div class="ft">${title}</div><div class="fd">${desc}</div>`;
+  } else {
+    selEl.innerHTML = tagHTML + newText;
+  }
+
+  document.getElementById('elPreview').textContent = newText.length > 90 ? newText.slice(0,90) + '…' : newText;
+  showToast('✔ Change applied!');
+  addMsg('sys', '✔ Updated: ' + (selEl.getAttribute('data-label') || 'element'));
+}
+
+function setupAiToggle() {
+  document.getElementById('aiToggle').addEventListener('click', () => {
+    const body = document.getElementById('aiBody');
+    const chev = document.getElementById('aiToggleChev');
+    const open = body.classList.toggle('open');
+    chev.classList.toggle('open', open);
+  });
+}
+
+function setupChat() {
+  document.getElementById('sendBtn').addEventListener('click', doSend);
+  document.getElementById('chatIn').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
+  });
+
+  const qaPrompts = {
+    fresh: 'Rewrite this with a fresh, engaging angle that fits a coastal vacation rental platform',
+    shorter: 'Make this shorter and more concise while keeping the core message',
+    punchier: 'Make this punchier, more exciting, and more compelling',
+    coastal: 'Give this a warm, coastal, beach-house vibe — relaxed but inviting',
+    professional: 'Rewrite this to sound polished and professional while staying warm and approachable',
+    color: 'Change the background or text color to something that fits the Shore Stay brand (ocean blue, seafoam, or sandy tones)'
+  };
+
+  document.querySelectorAll('.qbtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const prompt = qaPrompts[btn.getAttribute('data-qa')] || '';
+      const body = document.getElementById('aiBody');
+      if (!body.classList.contains('open')) {
+        body.classList.add('open');
+        document.getElementById('aiToggleChev').classList.add('open');
+      }
+      if (apiKey) {
+        document.getElementById('chatIn').value = prompt;
+        doSend();
+      } else {
+        document.getElementById('chatIn').value = prompt;
+        addMsg('sys', '💡 Edit the text above directly, or add an API key to use AI.');
+      }
+    });
+  });
+}
+
+async function doSend() {
+  if (!selEl) { addMsg('sys', 'Please select an element first.'); return; }
+  const input = document.getElementById('chatIn');
+  const msg = input.value.trim();
+  if (!msg) return;
+  if (!apiKey) {
+    addMsg('ai', '⚠️ Paste your Anthropic API key (top-right) to enable AI editing.');
+    return;
+  }
+  input.value = '';
+  addMsg('user', msg);
+
+  const label = selEl.getAttribute('data-label') || 'element';
+  const type = selEl.getAttribute('data-type') || 'text';
+  const etag = selEl.querySelector('.etag');
+  const currentHTML = selEl.innerHTML.replace(etag ? etag.outerHTML : '', '').trim();
+  const currentText = selEl.innerText.replace(etag?.innerText || '', '').trim().replace(/\s+/g,' ');
+  const currentStyle = selEl.getAttribute('style') || '';
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>';
+  addMsg('sys', 'AI is thinking…');
+
+  try {
+    const sysPrompt = `You are a friendly website content editor for Shore Stay, a coastal vacation rental platform.
+Selected element: "${label}" (type: ${type})
+Current content: "${currentText}"
+Current style: "${currentStyle}"
+Brand colors: ocean blue #0f4c75, seafoam #56cfe1, sand #f5e0c3. Voice: warm, coastal, approachable.
+Return ONLY raw JSON (no markdown):
+{"newHTML":"...","newStyle":"...","message":"..."}
+RULES: text/button = plain text only. card = keep .fi-wrap/.ft/.fd structure. message = 1 friendly sentence. JSON only.`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-calls': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: sysPrompt,
+        messages: [{ role: 'user', content: msg }]
+      })
+    });
+
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `Error ${res.status}`); }
+    const data = await res.json();
+    const parsed = JSON.parse(data.content[0].text.replace(/```json|```/g,'').trim());
+
+    pushUndo(selEl);
+    const tagHTML = etag ? etag.outerHTML : '';
+    if (type === 'card') {
+      selEl.innerHTML = tagHTML + (parsed.newHTML || currentHTML);
+    } else {
+      selEl.innerHTML = tagHTML + (parsed.newHTML || '');
+    }
+    if (parsed.newStyle?.trim()) {
+      selEl.setAttribute('style', (currentStyle ? currentStyle + '; ' : '') + parsed.newStyle);
+    }
+    removeLastSysMsg();
+    addMsg('ai', '✅ ' + (parsed.message || 'Done!'));
+    showToast('✔ AI edit applied!');
+  } catch(err) {
+    removeLastSysMsg();
+    addMsg('err', '⚠️ ' + (err.message || 'Something went wrong. Check your API key.'));
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '➤';
+  }
+}
+
+function addMsg(role, text) {
+  const c = document.getElementById('chatMsgs');
+  const d = document.createElement('div');
+  d.className = 'msg msg-' + (role === 'err' ? 'err' : role);
+  d.setAttribute('data-role', role);
+  d.textContent = text;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+function removeLastSysMsg() {
+  const all = document.querySelectorAll('#chatMsgs [data-role="sys"]');
+  if (all.length) all[all.length-1].remove();
+}
+function enableQuickBtns()  { document.querySelectorAll('.qbtn').forEach(b => b.disabled = false); }
+function disableQuickBtns() { document.querySelectorAll('.qbtn').forEach(b => b.disabled = true); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+// ══════════════════════════════════════
+//  SAVE / EXPORT / IMPORT
+// ══════════════════════════════════════
+const SAVE_KEY = 'ss_edits';
+
+function captureAllEdits() {
+  const edits = {};
+  document.querySelectorAll('[data-editable][id]').forEach(el => {
+    const etag = el.querySelector('.etag');
+    edits[el.id] = {
+      html: el.innerHTML.replace(etag ? etag.outerHTML : '', '').trim(),
+      style: el.getAttribute('style') || ''
+    };
+  });
+  return edits;
+}
+
+function saveEdits() {
+  const edits = captureAllEdits();
+  const colors = JSON.parse(localStorage.getItem('ss_colors') || '{}');
+  const logo   = document.getElementById('logoFilename')?.value || '';
+  localStorage.setItem(SAVE_KEY, JSON.stringify({ edits, colors, logo }));
+  showToast('💾 Progress saved!');
+  document.getElementById('saveBtn').textContent = '✔ Saved';
+  setTimeout(() => { document.getElementById('saveBtn').textContent = '💾 Save'; }, 2000);
+}
+
+function restoreSavedEdits() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return;
+  try {
+    const { edits, colors, logo } = JSON.parse(raw);
+    // Restore text/html edits
+    if (edits) {
+      Object.entries(edits).forEach(([id, data]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const etag = el.querySelector('.etag');
+        const tagHTML = etag ? etag.outerHTML : '';
+        if (data.html) el.innerHTML = tagHTML + data.html;
+        if (data.style) el.setAttribute('style', data.style);
+        else el.removeAttribute('style');
+      });
+    }
+    // Restore colors
+    if (colors) {
+      Object.entries(colors).forEach(([k, v]) => applyThemeColor(k, v));
+    }
+    // Restore logo
+    if (logo) {
+      document.getElementById('logoFilename').value = logo;
+      applyLogo();
+    }
+  } catch(e) { console.warn('Could not restore saved edits', e); }
+}
+
+function exportEdits() {
+  const edits  = captureAllEdits();
+  const colors = JSON.parse(localStorage.getItem('ss_colors') || '{}');
+  const logo   = document.getElementById('logoFilename')?.value || '';
+  const data   = JSON.stringify({ edits, colors, logo, savedAt: new Date().toISOString() }, null, 2);
+  const blob   = new Blob([data], { type: 'application/json' });
+  const url    = URL.createObjectURL(blob);
+  const a      = document.createElement('a');
+  a.href = url;
+  a.download = 'shore-stay-edits.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📤 Exported shore-stay-edits.json');
+}
+
+function importEdits(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const { edits, colors, logo } = JSON.parse(e.target.result);
+      localStorage.setItem(SAVE_KEY, JSON.stringify({ edits, colors, logo }));
+      if (colors) localStorage.setItem('ss_colors', JSON.stringify(colors));
+      restoreSavedEdits();
+      showToast('📥 Import complete!');
+    } catch(err) {
+      showToast('⚠️ Invalid file — could not import');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function setupSaveExport() {
+  document.getElementById('saveBtn').addEventListener('click', saveEdits);
+  document.getElementById('exportBtn').addEventListener('click', exportEdits);
+  document.getElementById('importBtn').addEventListener('click', () => {
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', e => {
+    if (e.target.files[0]) importEdits(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  // Auto-save after every Apply Change (patch applyDirect)
+  const origApply = window.applyDirect;
+  document.getElementById('directApplyBtn').addEventListener('click', () => {
+    setTimeout(saveEdits, 100);
+  }, true);
+}
+
+function setupHelp() {
+  document.getElementById('helpBtn').addEventListener('click', () => document.getElementById('helpModal').classList.add('on'));
+  document.getElementById('helpModal').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('on'); });
+}
+
+// ══════════════════════════════════════
+//  THEME PANEL — global colors & logo
+// ══════════════════════════════════════
+const COLOR_DEFAULTS = {
+  ocean:   '#0f4c75',
+  seafoam: '#56cfe1',
+  sand:    '#f5e0c3',
+  nav:     '#071e36',
+  hdr:     '#0f4c75',
+  btn:     '#0f4c75',
+  btntext: '#ffffff'
+};
+
+// Apply a named theme color across the preview
+function applyThemeColor(varName, hex) {
+  const root = document.documentElement;
+  const preview = document.getElementById('previewPane');
+
+  // Always update CSS vars
+  if (varName === 'ocean') {
+    root.style.setProperty('--ocean', hex);
+    root.style.setProperty('--ocean-mid', shiftColor(hex, 20));
+    root.style.setProperty('--ocean-light', shiftColor(hex, 40));
+    // Update inline gradient headers that use hardcoded ocean colors
+    preview.querySelectorAll('.rh-header, .dash-header').forEach(el => {
+      el.style.background = `linear-gradient(160deg, ${shiftColor(hex,-15)} 0%, ${hex} 55%, ${shiftColor(hex,20)} 100%)`;
+    });
+    preview.querySelectorAll('.prop-card-top').forEach(el => {
+      el.style.background = `linear-gradient(90deg, ${hex} 0%, ${shiftColor(hex,20)} 100%)`;
+    });
+    preview.querySelectorAll('.hero-card::before').forEach(el => {
+      el.style.background = `linear-gradient(90deg, ${hex}, var(--seafoam), ${hex})`;
+    });
+    preview.querySelectorAll('.btn-primary, .dash-add-btn, .empty-cta').forEach(el => {
+      el.style.background = `linear-gradient(135deg, ${hex} 0%, ${shiftColor(hex,20)} 100%)`;
+    });
+    preview.querySelectorAll('.feat-h, .hero-h1, .room-name, .guide-cat-h, .plan-date-hdr, .dash-sec-ttl, .ss-brand-pill').forEach(el => {
+      el.style.color = hex;
+    });
+  }
+
+  if (varName === 'seafoam') {
+    root.style.setProperty('--seafoam', hex);
+    root.style.setProperty('--seafoam-light', shiftColor(hex, 40));
+    preview.querySelectorAll('.rh-dates, .plan-time, .room-type-badge').forEach(el => {
+      el.style.color = hex;
+      if (el.classList.contains('rh-dates')) {
+        el.style.background = hexToRgba(hex, 0.12);
+        el.style.borderColor = hexToRgba(hex, 0.25);
+      }
+      if (el.classList.contains('room-type-badge')) {
+        el.style.background = hexToRgba(hex, 0.15);
+      }
+    });
+    preview.querySelectorAll('.rule-item').forEach(el => {
+      el.style.borderLeftColor = hex;
+    });
+  }
+
+  if (varName === 'sand') {
+    root.style.setProperty('--sand', hex);
+    preview.querySelectorAll('.rh-body, .dash-body').forEach(el => { el.style.background = hex; });
+    preview.querySelectorAll('.hero-wrap').forEach(el => {
+      el.style.background = `linear-gradient(180deg, #e8f4fd 0%, ${shiftColor(hex,-5)} 60%, ${hex} 100%)`;
+    });
+    // Update wave fill colors
+    preview.querySelectorAll('.wave-divider path').forEach(p => { p.setAttribute('fill', hex); });
+  }
+
+  if (varName === 'nav') {
+    preview.querySelectorAll('.home-nav').forEach(el => {
+      el.style.background = `linear-gradient(90deg, ${shiftColor(hex,-8)} 0%, ${hex} 100%)`;
+    });
+  }
+
+  if (varName === 'hdr') {
+    preview.querySelectorAll('.rh-header, .dash-header').forEach(el => {
+      el.style.background = `linear-gradient(160deg, ${shiftColor(hex,-15)} 0%, ${hex} 55%, ${shiftColor(hex,20)} 100%)`;
+    });
+  }
+
+  if (varName === 'btn') {
+    preview.querySelectorAll('.btn-primary, .dash-add-btn').forEach(el => {
+      el.style.background = `linear-gradient(135deg, ${hex} 0%, ${shiftColor(hex,20)} 100%)`;
+      el.style.boxShadow = `0 4px 16px ${hexToRgba(hex, 0.35)}`;
+    });
+    preview.querySelectorAll('.empty-cta').forEach(el => {
+      el.style.background = `linear-gradient(135deg, ${hex} 0%, ${shiftColor(hex,20)} 100%)`;
+    });
+  }
+
+  if (varName === 'btntext') {
+    preview.querySelectorAll('.btn-primary, .dash-add-btn, .empty-cta').forEach(el => {
+      el.style.color = hex;
+    });
+  }
+
+  // Sync swatches & hex fields
+  const swatch = document.getElementById('clr-' + varName);
+  const hexField = document.getElementById('hex-' + varName);
+  if (swatch) swatch.value = hex;
+  if (hexField) hexField.value = hex;
+
+  // Persist
+  const saved = JSON.parse(localStorage.getItem('ss_colors') || '{}');
+  saved[varName] = hex;
+  localStorage.setItem('ss_colors', JSON.stringify(saved));
+}
+
+// Lighten/darken a hex color by amount (-255 to 255)
+function shiftColor(hex, amount) {
+  const n = parseInt(hex.replace('#',''), 16);
+  const r = Math.min(255, Math.max(0, (n >> 16) + amount));
+  const g = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + amount));
+  const b = Math.min(255, Math.max(0, (n & 0xff) + amount));
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+function hexToRgba(hex, alpha) {
+  const n = parseInt(hex.replace('#',''), 16);
+  return `rgba(${n>>16},${(n>>8)&0xff},${n&0xff},${alpha})`;
+}
+
+function setupThemePanel() {
+  // Toggle open/close
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const body = document.getElementById('themeBody');
+    const chev = document.getElementById('themeChev');
+    const open = body.classList.toggle('open');
+    chev.classList.toggle('open', open);
+  });
+
+  // Wire each color swatch + hex field pair
+  Object.keys(COLOR_DEFAULTS).forEach(varName => {
+    const swatch = document.getElementById('clr-' + varName);
+    const hexField = document.getElementById('hex-' + varName);
+    if (!swatch) return;
+
+    swatch.addEventListener('input', () => {
+      const hex = swatch.value;
+      if (hexField) hexField.value = hex;
+      applyThemeColor(varName, hex);
+    });
+
+    if (hexField) {
+      hexField.addEventListener('change', () => {
+        let hex = hexField.value.trim();
+        if (!hex.startsWith('#')) hex = '#' + hex;
+        if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
+          swatch.value = hex;
+          applyThemeColor(varName, hex);
+        }
+      });
+    }
+
+    // Reset button
+    const resetBtn = document.querySelector(`.clr-reset[data-target="${varName}"]`);
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        applyThemeColor(varName, COLOR_DEFAULTS[varName]);
+      });
+    }
+  });
+
+  // Reset all
+  document.getElementById('resetAllBtn').addEventListener('click', () => {
+    Object.entries(COLOR_DEFAULTS).forEach(([k, v]) => applyThemeColor(k, v));
+    localStorage.removeItem('ss_colors');
+    showToast('Colors reset to defaults');
+  });
+
+  // Logo
+  document.getElementById('applyLogoBtn').addEventListener('click', applyLogo);
+  document.getElementById('logoFilename').addEventListener('keydown', e => {
+    if (e.key === 'Enter') applyLogo();
+  });
+  document.getElementById('removeLogoBtn').addEventListener('click', () => {
+    document.querySelectorAll('#e-logo img').forEach(i => i.remove());
+    const logo = document.getElementById('e-logo');
+    if (logo && !logo.querySelector('img')) {
+      const etag = logo.querySelector('.etag');
+      const tagHTML = etag ? etag.outerHTML : '';
+      logo.innerHTML = tagHTML + 'Shore Stay';
+    }
+    document.getElementById('logoPreview').innerHTML = '<span class="logo-preview-empty">Logo preview will appear here</span>';
+    document.getElementById('logoFilename').value = '';
+    showToast('Logo removed — back to text');
+  });
+
+  // Restore saved colors
+  const saved = JSON.parse(localStorage.getItem('ss_colors') || '{}');
+  Object.entries(saved).forEach(([k, v]) => applyThemeColor(k, v));
+}
+
+function applyLogo() {
+  let src = document.getElementById('logoFilename').value.trim();
+  if (!src) return;
+  // If it's just a filename (no http / no leading /) add leading slash
+  if (!src.startsWith('http') && !src.startsWith('/') && !src.startsWith('data:')) {
+    src = '/' + src;
+  }
+  const logo = document.getElementById('e-logo');
+  if (!logo) return;
+  const etag = logo.querySelector('.etag');
+  const tagHTML = etag ? etag.outerHTML : '';
+  logo.innerHTML = tagHTML + `<img src="${src}" alt="Logo" style="max-height:36px;max-width:140px;object-fit:contain;display:block;">`;
+
+  // Preview in sidebar
+  const prev = document.getElementById('logoPreview');
+  prev.innerHTML = `<img src="${src}" alt="Logo" onerror="this.parentElement.innerHTML='<span class=\\'logo-preview-empty\\'>Image not found — check the filename</span>'">`;
+  showToast('Logo applied to nav!');
+}
+
+// ══════════════════════════════════════
+//  ELEMENT COLOR PICKERS
+// ══════════════════════════════════════
+function setupElementColors() {
+  const textSwatch = document.getElementById('clr-el-text');
+  const textHex    = document.getElementById('hex-el-text');
+  const bgSwatch   = document.getElementById('clr-el-bg');
+  const bgHex      = document.getElementById('hex-el-bg');
+
+  function applyElColor(prop, hex) {
+    if (!selEl) return;
+    pushUndo(selEl);
+    const current = selEl.getAttribute('style') || '';
+    // Remove existing matching property then append new one
+    const cleaned = current.replace(new RegExp(`(^|;)\\s*${prop}\\s*:[^;]+`, 'g'), '').replace(/^;+|;+$/g,'').trim();
+    selEl.setAttribute('style', (cleaned ? cleaned + '; ' : '') + `${prop}: ${hex}`);
+    showToast('Color applied!');
+  }
+
+  textSwatch.addEventListener('input', () => {
+    textHex.value = textSwatch.value;
+    applyElColor('color', textSwatch.value);
+  });
+  textHex.addEventListener('change', () => {
+    let h = textHex.value.trim();
+    if (!h.startsWith('#')) h = '#' + h;
+    if (/^#[0-9a-fA-F]{6}$/.test(h)) { textSwatch.value = h; applyElColor('color', h); }
+  });
+
+  bgSwatch.addEventListener('input', () => {
+    bgHex.value = bgSwatch.value;
+    applyElColor('background-color', bgSwatch.value);
+  });
+  bgHex.addEventListener('change', () => {
+    let h = bgHex.value.trim();
+    if (!h.startsWith('#')) h = '#' + h;
+    if (/^#[0-9a-fA-F]{6}$/.test(h)) { bgSwatch.value = h; applyElColor('background-color', h); }
+  });
+}
+
+// Sync element color pickers when an element is selected
+function syncElColorPickers(el) {
+  const computed = window.getComputedStyle(el);
+  const toHex = rgb => {
+    const m = rgb.match(/\d+/g);
+    if (!m || m.length < 3) return '#000000';
+    return '#' + m.slice(0,3).map(n => parseInt(n).toString(16).padStart(2,'0')).join('');
+  };
+  const textHex = toHex(computed.color);
+  const bgHex   = toHex(computed.backgroundColor);
+  document.getElementById('clr-el-text').value = textHex;
+  document.getElementById('hex-el-text').value = textHex;
+  // Only show bg color if it's not transparent
+  const bgRaw = computed.backgroundColor;
+  const isTransparent = bgRaw === 'rgba(0, 0, 0, 0)' || bgRaw === 'transparent';
+  document.getElementById('clr-el-bg').value  = isTransparent ? '#ffffff' : bgHex;
+  document.getElementById('hex-el-bg').value  = isTransparent ? '#ffffff' : bgHex;
+}
+</script>
+</body>
+</html>
