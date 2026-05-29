@@ -1,7 +1,7 @@
-// Vercel serverless entry point. Wraps the Express app from the compiled
-// backend (backend/dist) so each /api/* request invokes a single function.
+// Vercel serverless entry point. Wraps the Express app from ./_lib/ so each
+// /api/* request invokes a single function. The _lib folder is hidden from
+// Vercel's function discovery by the underscore prefix.
 import serverless from 'serverless-http';
-// @ts-expect-error - resolved at runtime after `tsc` builds backend/dist
-import app from '../backend/dist/index.js';
+import app from './_lib/index.js';
 
 export default serverless(app as any);

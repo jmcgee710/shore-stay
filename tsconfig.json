@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
@@ -9,10 +9,11 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
     "baseUrl": "."
   },
+  "include": ["api/**/*.ts"],
   "references": [
-    { "path": "./frontend" },
-    { "path": "./backend" }
+    { "path": "./frontend" }
   ]
 }
