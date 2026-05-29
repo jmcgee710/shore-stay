@@ -304,7 +304,7 @@ export default function HomePage() {
   const [activeRole, setActiveRole] = useState<'owner' | 'watcher' | 'guest'>('owner');
 
   useEffect(() => {
-    const api = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+    const api = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:5000');
     fetch(`${api}/api/public/listings?limit=1`)
       .then(r => r.json()).then(d => setFeaturedCount(d.total ?? 0)).catch(() => {});
   }, []);

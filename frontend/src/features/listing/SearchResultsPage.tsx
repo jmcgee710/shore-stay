@@ -10,7 +10,7 @@ const T = {
   cream: '#fbf7ee', muted: '#5b6b7a', line: 'rgba(15,76,117,0.12)',
 };
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+const API = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:5000');
 const PAGE_SIZE = 12;
 
 export default function SearchResultsPage() {

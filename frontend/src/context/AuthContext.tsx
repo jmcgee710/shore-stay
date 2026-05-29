@@ -23,7 +23,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const TOKEN_KEY = 'ss_token';
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+const API = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
 function decodeToken(token: string): AuthUser | null {
   try {

@@ -5,7 +5,7 @@ import PropertyCard from './components/PropertyCard';
 import { getTownBySlug, LBI_TOWNS } from './data/towns';
 import type { ListingSummary } from './types';
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+const API = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
 function WaveDivider() {
   return (

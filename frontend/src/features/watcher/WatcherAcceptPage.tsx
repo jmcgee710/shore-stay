@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+const API = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:5000');
 
 export default function WatcherAcceptPage() {
   const { inviteToken } = useParams<{ inviteToken: string }>();
