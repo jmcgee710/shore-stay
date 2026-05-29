@@ -2,6 +2,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
+// ── Responsive helper ────────────────────────────────────────────────────────
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    setIsMobile(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 // ── Design tokens (match prototype CSS vars exactly) ─────────────────────────
 const T = {
   oceanDeep:   '#0a3457',
@@ -302,6 +317,9 @@ const PRICING = [
 export default function HomePage() {
   const [featuredCount, setFeaturedCount] = useState(0);
   const [activeRole, setActiveRole] = useState<'owner' | 'watcher' | 'guest'>('owner');
+  const isMobile = useIsMobile();
+  const px = isMobile ? 20 : 56; // horizontal section padding
+  const py = isMobile ? 64 : 100; // vertical section padding
 
   useEffect(() => {
     const api = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:5000');
@@ -315,7 +333,7 @@ export default function HomePage() {
     <div style={{ minHeight: '100vh', background: T.bg, color: T.ink, fontFamily: 'Inter Tight, Inter, sans-serif' }}>
 
       {/* ── Nav ─────────────────────────────────────────────── */}
-      <nav className="glass-nav fixed inset-x-0 top-0 z-50 flex items-center justify-between px-8 py-3.5">
+      <nav className="glass-nav fixed inset-x-0 top-0 z-50 flex items-center justify-between px-4 md:px-8 py-3 md:py-3.5">
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <img src="/logo.png" alt="Shore Stay" style={{ height: 34, width: 34, objectFit: 'contain' }} />
           <span style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 18, fontWeight: 500, color: T.oceanDeep, letterSpacing: '-0.01em' }}>Shore<span style={{ fontWeight: 300 }}>Stay</span></span>
@@ -326,13 +344,13 @@ export default function HomePage() {
           <a href="#pricing" style={{ color: T.muted, textDecoration: 'none' }}>Pricing</a>
           <Link to="/login" style={{ color: T.muted, textDecoration: 'none' }}>Sign in</Link>
         </div>
-        <Link to="/register" className="pill-btn-primary" style={{ fontSize: 13, padding: '8px 20px' }}>List your property</Link>
+        <Link to="/register" className="pill-btn-primary" style={{ fontSize: isMobile ? 12 : 13, padding: isMobile ? '7px 14px' : '8px 20px', whiteSpace: 'nowrap' }}>{isMobile ? 'List' : 'List your property'}</Link>
       </nav>
 
       {/* ── Hero ────────────────────────────────────────────── */}
-      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden', background: `linear-gradient(160deg, #061e33 0%, ${T.oceanDeep} 40%, ${T.ocean} 100%)`, paddingTop: 64 }}>
+      <section style={{ position: 'relative', minHeight: isMobile ? 'auto' : '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden', background: `linear-gradient(160deg, #061e33 0%, ${T.oceanDeep} 40%, ${T.ocean} 100%)`, paddingTop: 64 }}>
         <HeroWaves />
-        <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', width: '100%', display: 'flex', alignItems: 'center', gap: 80, padding: '80px 56px' }}>
+        <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', width: '100%', display: 'flex', alignItems: 'center', gap: isMobile ? 32 : 80, padding: `${isMobile ? 56 : 80}px ${px}px` }}>
           <div style={{ flex: 1 }}>
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8, borderRadius: 999, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', padding: '6px 14px', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', marginBottom: 22 }}>
@@ -341,13 +359,13 @@ export default function HomePage() {
             </motion.div>
 
             <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.7 }}
-              style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 68, fontWeight: 400, lineHeight: 1.02, letterSpacing: '-0.03em', color: 'white', margin: '0 0 20px' }}>
+              style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(40px, 11vw, 68px)', fontWeight: 400, lineHeight: 1.02, letterSpacing: '-0.03em', color: 'white', margin: '0 0 20px' }}>
               Your shore house,{' '}
               <em style={{ fontStyle: 'italic', fontWeight: 300, color: T.seafoam }}>handled.</em>
             </motion.h1>
 
             <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.6 }}
-              style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(255,255,255,0.6)', maxWidth: 480, marginBottom: 36 }}>
+              style={{ fontSize: isMobile ? 15 : 16, lineHeight: 1.6, color: 'rgba(255,255,255,0.6)', maxWidth: 480, marginBottom: isMobile ? 28 : 36 }}>
               One quiet platform for the homeowners, watchers and guests behind the best summer rentals on the Jersey Shore.
             </motion.p>
 
@@ -372,15 +390,15 @@ export default function HomePage() {
       </section>
 
       {/* ── Features ────────────────────────────────────────── */}
-      <section id="features" style={{ padding: '100px 56px', background: T.bg }}>
+      <section id="features" style={{ padding: `${py}px ${px}px`, background: T.bg }}>
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-          <div style={{ marginBottom: 56, maxWidth: 600 }}>
+          <div style={{ marginBottom: isMobile ? 36 : 56, maxWidth: 600 }}>
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: T.ocean, marginBottom: 14 }}>The platform</div>
-            <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 52, fontWeight: 400, lineHeight: 1.02, letterSpacing: '-0.03em', color: T.oceanDeep, margin: 0 }}>
+            <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(32px, 8vw, 52px)', fontWeight: 400, lineHeight: 1.02, letterSpacing: '-0.03em', color: T.oceanDeep, margin: 0 }}>
               Everything the shore house needs
             </h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: T.line, borderRadius: 20, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 1, background: T.line, borderRadius: 20, overflow: 'hidden' }}>
             {FEATURES.map((f, i) => (
               <motion.div key={f.n} initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.07 }}
                 style={{ display: 'flex', flexDirection: 'column', gap: 16, background: 'rgba(251,247,238,0.95)', backdropFilter: 'blur(4px)', padding: 28 }}>
@@ -397,32 +415,32 @@ export default function HomePage() {
       </section>
 
       {/* ── Roles ───────────────────────────────────────────── */}
-      <section style={{ padding: '100px 56px 120px', background: T.oceanDeep, color: T.cream, position: 'relative', overflow: 'hidden' }}>
+      <section style={{ padding: `${py}px ${px}px ${isMobile ? 80 : 120}px`, background: T.oceanDeep, color: T.cream, position: 'relative', overflow: 'hidden' }}>
         <svg viewBox="0 0 1440 200" preserveAspectRatio="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, width: '100%', height: 200, opacity: 0.06 }} aria-hidden>
           <path d="M0,100 C240,140 480,60 720,100 C960,140 1200,60 1440,100" stroke={T.seafoam} strokeWidth="1" fill="none" />
           <path d="M0,140 C240,180 480,100 720,140 C960,180 1200,100 1440,140" stroke={T.seafoam} strokeWidth="1" fill="none" />
         </svg>
         <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative' }}>
-          <div style={{ marginBottom: 48, maxWidth: 720 }}>
+          <div style={{ marginBottom: isMobile ? 32 : 48, maxWidth: 720 }}>
             <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: T.seafoam, marginBottom: 18 }}>Made for everyone on the property</div>
-            <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 56, fontWeight: 400, lineHeight: 1.02, letterSpacing: '-0.03em', margin: 0 }}>
+            <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(32px, 8vw, 56px)', fontWeight: 400, lineHeight: 1.02, letterSpacing: '-0.03em', margin: 0 }}>
               One platform. <em style={{ fontStyle: 'italic', fontWeight: 300, color: T.seafoam }}>Five roles</em>.
             </h2>
           </div>
 
           {/* Tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.15)', marginBottom: 48 }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.15)', marginBottom: isMobile ? 32 : 48 }}>
             {(Object.entries(ROLES_DATA) as [string, typeof role][]).map(([key, r]) => (
               <button key={key} onClick={() => setActiveRole(key as typeof activeRole)}
-                style={{ padding: '16px 28px', color: T.cream, fontSize: 15, fontWeight: 500, letterSpacing: '-0.01em', opacity: activeRole === key ? 1 : 0.5, borderBottom: activeRole === key ? `2px solid ${T.seafoam}` : '2px solid transparent', marginBottom: -1, transition: 'opacity 150ms', background: 'none', cursor: 'pointer' }}>
+                style={{ padding: isMobile ? '12px 14px' : '16px 28px', color: T.cream, fontSize: isMobile ? 13 : 15, fontWeight: 500, letterSpacing: '-0.01em', opacity: activeRole === key ? 1 : 0.5, borderBottom: activeRole === key ? `2px solid ${T.seafoam}` : '2px solid transparent', marginBottom: -1, transition: 'opacity 150ms', background: 'none', cursor: 'pointer' }}>
                 For {r.label}
               </button>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: 80, alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '0.9fr 1.1fr', gap: isMobile ? 40 : 80, alignItems: 'center' }}>
             <div>
-              <h3 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 40, fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: 28 }}>{role.lede}</h3>
+              <h3 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(26px, 6vw, 40px)', fontWeight: 400, lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: isMobile ? 22 : 28 }}>{role.lede}</h3>
               <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 36 }}>
                 {role.bullets.map((b, i) => (
                   <li key={i} style={{ display: 'flex', gap: 14, alignItems: 'flex-start', fontSize: 15, lineHeight: 1.55, opacity: 0.85 }}>
@@ -445,11 +463,11 @@ export default function HomePage() {
       </section>
 
       {/* ── Showcase ────────────────────────────────────────── */}
-      <section style={{ padding: '120px 56px', background: T.sand }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 80, alignItems: 'center' }}>
+      <section style={{ padding: `${isMobile ? 72 : 120}px ${px}px`, background: T.sand }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.1fr 0.9fr', gap: isMobile ? 48 : 80, alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: T.ocean, marginBottom: 18 }}>How it works</div>
-            <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 52, fontWeight: 400, lineHeight: 1.02, letterSpacing: '-0.03em', color: T.oceanDeep, marginBottom: 40 }}>
+            <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(32px, 8vw, 52px)', fontWeight: 400, lineHeight: 1.02, letterSpacing: '-0.03em', color: T.oceanDeep, marginBottom: isMobile ? 28 : 40 }}>
               Set up a property in <em style={{ fontStyle: 'italic', fontWeight: 300 }}>an afternoon</em>.
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -472,7 +490,7 @@ export default function HomePage() {
 
           {/* QR fridge illustration */}
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <div style={{ width: 360, borderRadius: 20, background: T.cream, border: `1px solid ${T.line}`, boxShadow: '0 30px 80px -20px rgba(15,76,117,0.25)', padding: 32, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 360, borderRadius: 20, background: T.cream, border: `1px solid ${T.line}`, boxShadow: '0 30px 80px -20px rgba(15,76,117,0.25)', padding: isMobile ? 24 : 32, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               {/* Tape */}
               <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%) rotate(-2deg)', width: 100, height: 26, background: `color-mix(in oklab, ${T.sandWarm} 80%, transparent)`, opacity: 0.85, borderRadius: 2 }} />
               <img src="/logo.png" alt="Shore Stay" style={{ height: 48, objectFit: 'contain' }} />
@@ -493,9 +511,9 @@ export default function HomePage() {
       </section>
 
       {/* ── Testimonial ─────────────────────────────────────── */}
-      <section style={{ padding: '100px 56px', background: T.cream }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 56, alignItems: 'center' }}>
-          <div style={{ width: 220, height: 280, borderRadius: 12, background: `repeating-linear-gradient(120deg, ${T.sandWarm} 0 10px, ${T.sand} 10px 20px)`, border: `1px solid ${T.line}`, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+      <section style={{ padding: `${py}px ${px}px`, background: T.cream }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: isMobile ? 32 : 56, alignItems: 'center', justifyItems: isMobile ? 'center' : 'stretch' }}>
+          <div style={{ width: isMobile ? 160 : 220, height: isMobile ? 200 : 280, borderRadius: 12, background: `repeating-linear-gradient(120deg, ${T.sandWarm} 0 10px, ${T.sand} 10px 20px)`, border: `1px solid ${T.line}`, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
             <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 60%, color-mix(in oklab, ${T.oceanDeep} 70%, transparent))` }} />
             <div style={{ position: 'absolute', left: 12, bottom: 12, fontFamily: 'ui-monospace, monospace', fontSize: 10, color: T.cream, opacity: 0.85, letterSpacing: '0.05em' }}>[ portrait · owner photo ]</div>
           </div>
@@ -503,7 +521,7 @@ export default function HomePage() {
             <div style={{ display: 'flex', gap: 4, marginBottom: 24 }}>
               {[0,1,2,3,4].map(i => <Icon.star key={i} style={{ width: 16, height: 16, color: T.coral }} />)}
             </div>
-            <blockquote style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 30, fontWeight: 400, lineHeight: 1.3, letterSpacing: '-0.025em', color: T.oceanDeep, margin: '0 0 28px' }}>
+            <blockquote style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(20px, 5vw, 30px)', fontWeight: 400, lineHeight: 1.3, letterSpacing: '-0.025em', color: T.oceanDeep, margin: '0 0 28px' }}>
               "We went from <em style={{ fontStyle: 'italic', fontWeight: 300 }}>three spreadsheets, a group text, and a paper binder</em> to one page. The QR alone changed how guests show up — they actually read the rules now."
             </blockquote>
             <div>
@@ -515,14 +533,14 @@ export default function HomePage() {
       </section>
 
       {/* ── Pricing ─────────────────────────────────────────── */}
-      <section id="pricing" style={{ padding: '100px 56px', background: T.bg }}>
+      <section id="pricing" style={{ padding: `${py}px ${px}px`, background: T.bg }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+          <div style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 56 }}>
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: T.ocean, marginBottom: 14 }}>Pricing</div>
-            <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 52, fontWeight: 400, lineHeight: 1.02, letterSpacing: '-0.03em', color: T.oceanDeep, margin: '0 0 12px' }}>Simple annual plans</h2>
+            <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(32px, 8vw, 52px)', fontWeight: 400, lineHeight: 1.02, letterSpacing: '-0.03em', color: T.oceanDeep, margin: '0 0 12px' }}>Simple annual plans</h2>
             <p style={{ fontSize: 15, color: T.muted, margin: 0 }}>No per-booking fees. No surprises.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 20 }}>
             {PRICING.map((plan, i) => (
               <motion.div key={plan.name} initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                 style={{ position: 'relative', display: 'flex', flexDirection: 'column', borderRadius: 24, padding: 28, ...(plan.highlight ? { background: T.oceanDeep, color: T.cream, boxShadow: '0 8px 40px rgba(10,52,87,0.25)' } : { background: 'rgba(255,255,255,0.7)', border: `1px solid ${T.line}` }) }}>
@@ -551,8 +569,8 @@ export default function HomePage() {
       </section>
 
       {/* ── Footer CTA ──────────────────────────────────────── */}
-      <footer style={{ background: T.oceanDeep, padding: '80px 56px', textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 48, fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.03em', color: 'white', margin: '0 0 12px' }}>
+      <footer style={{ background: T.oceanDeep, padding: `${isMobile ? 56 : 80}px ${px}px`, textAlign: 'center' }}>
+        <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 'clamp(30px, 7vw, 48px)', fontWeight: 400, lineHeight: 1.05, letterSpacing: '-0.03em', color: 'white', margin: '0 0 12px' }}>
           Ready to shore up your{' '}
           <em style={{ fontStyle: 'italic', fontWeight: 300, color: T.seafoam }}>summer?</em>
         </h2>
